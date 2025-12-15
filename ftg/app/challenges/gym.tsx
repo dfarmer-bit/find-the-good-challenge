@@ -1,0 +1,162 @@
+import { useRouter } from "expo-router";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { AppHeader } from "../../components/AppHeader";
+import {
+  Colors,
+  Components,
+  Layout,
+  Spacing,
+  Typography,
+} from "../../constants/theme";
+
+export default function GymScreen() {
+  const router = useRouter();
+
+  return (
+    <View style={styles.container}>
+      <AppHeader />
+
+      <View style={styles.content}>
+        <Text style={styles.title}>Gym Challenge</Text>
+        <Text style={styles.subtitle}>
+          Earn points for verified gym visits.
+        </Text>
+
+        <View style={styles.infoBox}>
+          <Text style={styles.infoText}>
+            • Activate a gym once to unlock check-ins{"\n"}
+            • Visits must last at least 15 minutes{"\n"}
+            • Weekly and streak bonuses apply automatically
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => router.push("/challenges/gym-activate")}
+        >
+          <Text style={styles.primaryButtonText}>Activate Gym</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.secondaryButton}>
+          <Text style={styles.secondaryButtonText}>Check In</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom Back */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backIcon}>⬅️</Text>
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    paddingTop: Layout.topScreenPadding,
+    paddingHorizontal: Spacing.screenPadding,
+  },
+
+  content: {
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  title: {
+    fontSize: Typography.greeting.fontSize,
+    fontWeight: Typography.greeting.fontWeight,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+    textAlign: "center",
+  },
+
+  subtitle: {
+    fontSize: Typography.quote.fontSize,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 16,
+  },
+
+  infoBox: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+  },
+
+  infoText: {
+    color: Colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+
+  primaryButton: {
+    backgroundColor: Colors.cards.complete,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 999,
+    marginBottom: 12,
+    width: "100%",
+    alignItems: "center",
+  },
+
+  primaryButtonText: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
+  secondaryButton: {
+    borderColor: Colors.cards.complete,
+    borderWidth: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 999,
+    width: "100%",
+    alignItems: "center",
+  },
+
+  secondaryButtonText: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+
+  bottomBar: {
+    position: "absolute",
+    bottom: Layout.bottomNavSpacing,
+    left: Spacing.screenPadding,
+    right: Spacing.screenPadding,
+    alignItems: "center",
+  },
+
+  backButton: {
+    ...Components.backButton,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backIcon: {
+    fontSize: 18,
+    marginRight: 8,
+  },
+
+  backText: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
