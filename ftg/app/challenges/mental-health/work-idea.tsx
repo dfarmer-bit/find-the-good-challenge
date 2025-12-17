@@ -1,25 +1,25 @@
 import { AppHeader } from "@/components/AppHeader";
+import { AppTextInput } from "@/components/AppTextInput";
 import {
-    Colors,
-    Components,
-    Layout,
-    Radius,
-    Spacing,
-    Typography,
+  Colors,
+  Components,
+  Layout,
+  Radius,
+  Spacing,
+  Typography,
 } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function WorkIdeaScreen() {
@@ -40,24 +40,35 @@ export default function WorkIdeaScreen() {
 
     setSubmitting(true);
 
-    const { error } = await supabase
-      .from("challenge_activity")
-      .insert({
-        challenge_id: "affd9da2-1986-42be-be57-c7453f13454f", // Work Improvement Idea
-        status: "pending",
-        metadata: {
-          title: title.trim(),
-          description: description.trim(),
-          impact: impact.trim(),
-        },
-      });
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setSubmitting(false);
+      Alert.alert("Error", "You must be logged in to submit.");
+      return;
+    }
+
+    const { error } = await supabase.from("challenge_activity").insert({
+      user_id: user.id,
+      challenge_id: "affd9da2-1986-42be-be57-c7453f13454f",
+      status: "pending",
+      occurred_at: new Date().toISOString(),
+      metadata: {
+        title: title.trim(),
+        description: description.trim(),
+        impact: impact.trim(),
+      },
+    });
 
     setSubmitting(false);
 
     if (error) {
       Alert.alert(
-        "Submission failed",
-        "Please try again."
+        "Already submitted",
+        "You can submit this challenge once per week."
       );
       return;
     }
@@ -80,62 +91,55 @@ export default function WorkIdeaScreen() {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           <View style={styles.headerText}>
             <Text style={styles.icon}>💡</Text>
-            <Text style={styles.title}>
-              Work Improvement Idea
-            </Text>
+            <Text style={styles.title}>Work Improvement Idea</Text>
             <Text style={styles.subtitle}>
-              <Text style={styles.subtitleBold}>
-                100 Points{"\n"}
-              </Text>
+              <Text style={styles.subtitleBold}>100 Points{"\n"}</Text>
               Share an idea that could improve workflows, teamwork, efficiency,
-              or the overall work environment. Your idea will be reviewed by
-              leadership. Limit 1x per week.
+              or the overall work environment. Limit 1x per week.
             </Text>
           </View>
 
           <View style={{ marginTop: 10 }}>
-            <TextInput
-              style={styles.input}
+            <AppTextInput
               placeholder="Idea title"
               placeholderTextColor={Colors.textSecondary}
               value={title}
               onChangeText={setTitle}
+              style={styles.inputSpacing}
             />
 
-            <TextInput
-              style={styles.textArea}
+            <AppTextInput
               placeholder="Describe your idea"
               placeholderTextColor={Colors.textSecondary}
               value={description}
               onChangeText={setDescription}
               multiline
+              style={[styles.textArea, styles.inputSpacing]}
             />
 
-            <TextInput
-              style={styles.textArea}
+            <AppTextInput
               placeholder="How will this improve the work environment?"
               placeholderTextColor={Colors.textSecondary}
               value={impact}
               onChangeText={setImpact}
               multiline
+              style={styles.textArea}
             />
           </View>
 
           <TouchableOpacity
             style={[
               styles.submitButton,
-              (!canSubmit || submitting) &&
-                styles.submitDisabled,
+              (!canSubmit || submitting) && styles.submitDisabled,
             ]}
             disabled={!canSubmit || submitting}
             onPress={submit}
           >
-            <Text style={styles.submitText}>
-              Submit for Review
-            </Text>
+            <Text style={styles.submitText}>Submit for Review</Text>
           </TouchableOpacity>
 
           <View style={{ height: 120 }} />
@@ -207,21 +211,12 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
 
-  input: {
-    backgroundColor: Colors.cards.journal,
-    color: Colors.textPrimary,
-    padding: 12,
-    borderRadius: Radius.card,
-    marginBottom: 10,
+  inputSpacing: {
+    marginBottom: 12,
   },
 
   textArea: {
-    backgroundColor: Colors.cards.journal,
-    color: Colors.textPrimary,
-    padding: 12,
-    borderRadius: Radius.card,
     minHeight: 90,
-    marginBottom: 12,
   },
 
   submitButton: {
@@ -229,6 +224,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: Radius.card,
     alignItems: "center",
+    marginTop: 8,
   },
 
   submitDisabled: {

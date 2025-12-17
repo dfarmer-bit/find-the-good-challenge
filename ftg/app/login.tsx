@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter, type Href } from "expo-router";
 import { useState } from "react";
 import {
@@ -20,6 +21,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -30,18 +32,25 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       Alert.alert("Login Error", error.message);
       return;
     }
 
+    // Record daily login (streak-safe)
+    if (data?.user) {
+      await supabase.rpc("record_daily_login", {
+        p_user_id: data.user.id,
+      });
+    }
+
+    setLoading(false);
     router.replace(HOME_ROUTE);
   };
 
@@ -64,14 +73,28 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="rgba(255,255,255,0.6)"
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        {/* Password with eye toggle */}
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor="rgba(255,255,255,0.6)"
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+          />
+
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={22}
+              color="rgba(255,255,255,0.7)"
+            />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.primaryButton}
@@ -93,12 +116,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
   },
+
   inner: {
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Platform.OS === "ios" ? 40 : 20,
   },
+
   title: {
     fontSize: Typography.greeting.fontSize,
     fontWeight: Typography.greeting.fontWeight,
@@ -106,6 +131,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
+
   input: {
     backgroundColor: "rgba(255,255,255,0.1)",
     borderRadius: 10,
@@ -115,6 +141,29 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     fontSize: 15,
   },
+
+  passwordWrapper: {
+    position: "relative",
+    marginBottom: 12,
+  },
+
+  passwordInput: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingRight: 44,
+    color: Colors.textPrimary,
+    fontSize: 15,
+  },
+
+  eyeButton: {
+    position: "absolute",
+    right: 12,
+    top: "50%",
+    transform: [{ translateY: -11 }],
+  },
+
   primaryButton: {
     backgroundColor: Colors.cards.complete,
     paddingVertical: 16,
@@ -122,6 +171,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 8,
   },
+
   primaryButtonText: {
     color: Colors.textPrimary,
     fontSize: 16,

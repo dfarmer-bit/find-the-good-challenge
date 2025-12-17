@@ -1,8 +1,8 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   Alert,
-  Dimensions,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -30,7 +30,6 @@ type AdminCard = {
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
-  const screenWidth = Dimensions.get("window").width;
   const [authorized, setAuthorized] = useState(false);
 
   const [gymCount, setGymCount] = useState(0);
@@ -80,10 +79,7 @@ export default function AdminDashboardScreen() {
       .eq("sub_category", "gym")
       .eq("active", true);
 
-    if (!gymChallenges || gymChallenges.length === 0) {
-      setGymCount(0);
-      return;
-    }
+    if (!gymChallenges?.length) return;
 
     const gymIds = gymChallenges.map((c) => c.id);
 
@@ -97,10 +93,7 @@ export default function AdminDashboardScreen() {
   };
 
   const loadSpotlightBadge = async () => {
-    const { data } = await supabase.rpc(
-      "spotlight_review_required"
-    );
-
+    const { data } = await supabase.rpc("spotlight_review_required");
     setSpotlightCount(data === true ? 1 : 0);
   };
 
@@ -126,54 +119,55 @@ export default function AdminDashboardScreen() {
 
   if (!authorized) return null;
 
-  const baseSize =
-    (screenWidth - Spacing.screenPadding * 2 - Spacing.gridGap) / 2;
-
-  const cardWidth = baseSize * Layout.cardScale;
-  const cardHeight = cardWidth * 0.9;
-
+  // 🔀 intentionally mixed colors (no consecutive feel)
   const cards: AdminCard[] = [
     {
       key: "gym",
-      label: "GYM\nFor Review",
+      label: "Gym\nReview",
       icon: "🏋️",
       color: Colors.cards.complete,
       route: "/admin/gym-review",
       count: gymCount,
     },
     {
+      key: "add-event",
+      label: "Add\nEvent",
+      icon: "➕",
+      color: "#2EC4B6",
+    },
+    {
       key: "spotlight",
-      label: "Spotlight\nFor Review",
+      label: "Spotlight\nReview",
       icon: "🌟",
       color: Colors.cards.journal,
       route: "/admin/spotlight-review",
       count: spotlightCount,
     },
     {
+      key: "assign-leader",
+      label: "Assign\nLeader",
+      icon: "🧑‍🏫",
+      color: Colors.cards.admin,
+    },
+    {
       key: "other",
-      label: "Other\nFor Review",
+      label: "Other\nReview",
       icon: "📋",
       color: Colors.cards.goals,
       route: "/admin/other-review",
       count: otherCount,
     },
     {
-      key: "leader",
-      label: "Assign\nLeader",
-      icon: "🧑‍🏫",
-      color: Colors.cards.admin,
+      key: "placeholder",
+      label: "Coming\nSoon",
+      icon: "🧩",
+      color: "#6DA8FF",
     },
     {
       key: "points",
-      label: "Point\nCorrection",
+      label: "Points\nCorrection",
       icon: "➕",
       color: "#FF9F1C",
-    },
-    {
-      key: "reports",
-      label: "Reports",
-      icon: "📊",
-      color: "#6DA8FF",
     },
     {
       key: "notifications",
@@ -203,24 +197,23 @@ export default function AdminDashboardScreen() {
           <TouchableOpacity
             key={card.key}
             onPress={() => card.route && router.push(card.route)}
-            style={[
-              styles.card,
-              {
-                width: cardWidth,
-                height: cardHeight,
-                backgroundColor: card.color,
-              },
-            ]}
+            style={[styles.card, { backgroundColor: card.color }]}
           >
+            <LinearGradient
+              colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
+              start={{ x: 1, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.cornerBubble}
+            >
+              <Text style={styles.bubbleIcon}>{card.icon}</Text>
+            </LinearGradient>
+
             {typeof card.count === "number" && card.count > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {card.count}
-                </Text>
+                <Text style={styles.badgeText}>{card.count}</Text>
               </View>
             )}
 
-            <Text style={styles.cardEmoji}>{card.icon}</Text>
             <Text style={styles.cardTitle}>{card.label}</Text>
           </TouchableOpacity>
         ))}
@@ -258,41 +251,61 @@ const styles = StyleSheet.create({
   },
   headerText: {
     alignItems: "center",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   title: {
     fontSize: Typography.greeting.fontSize,
     fontWeight: Typography.greeting.fontWeight,
     color: Colors.textPrimary,
     marginBottom: 4,
-    textAlign: "center",
   },
   subtitle: {
     fontSize: Typography.quote.fontSize,
     color: Colors.textSecondary,
-    textAlign: "center",
   },
+
+  // 🔒 locked 3-column grid with spacing
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "center",
-    columnGap: Spacing.gridGap,
+    justifyContent: "space-between",
     rowGap: Spacing.gridGap,
   },
+
   card: {
+    flexBasis: "32%",
+    height: 118,
     borderRadius: Radius.card,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: Spacing.cardPadding,
+    paddingBottom: 12,
+    paddingLeft: 12,
+    justifyContent: "flex-end",
+    overflow: "hidden",
   },
+
+  cornerBubble: {
+    position: "absolute",
+    top: -22,
+    right: -22,
+    width: 90,
+    height: 90,
+    borderRadius: 26,
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    padding: 16,
+  },
+
+  bubbleIcon: {
+    fontSize: 22,
+  },
+
   badge: {
     position: "absolute",
-    top: 10,
-    right: 12,
+    top: 8,
+    right: 10,
     backgroundColor: "#E63946",
     borderRadius: 12,
-    minWidth: 24,
-    height: 24,
+    minWidth: 22,
+    height: 22,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 6,
@@ -302,17 +315,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-  cardEmoji: {
-    fontSize: 26,
-    marginBottom: 6,
-  },
+
   cardTitle: {
     fontSize: Typography.cardTitle.fontSize,
     fontWeight: Typography.cardTitle.fontWeight,
     lineHeight: Typography.cardTitle.lineHeight,
     color: Colors.textPrimary,
-    textAlign: "center",
   },
+
   bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,

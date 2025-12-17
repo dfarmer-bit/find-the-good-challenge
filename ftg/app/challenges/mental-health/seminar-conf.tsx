@@ -1,26 +1,26 @@
 import { AppHeader } from "@/components/AppHeader";
 import {
-    Colors,
-    Components,
-    Layout,
-    Radius,
-    Spacing,
-    Typography,
+  Colors,
+  Components,
+  Layout,
+  Radius,
+  Spacing,
+  Typography,
 } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function SeminarConfScreen() {
@@ -94,11 +94,24 @@ export default function SeminarConfScreen() {
 
     setSubmitting(true);
 
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setSubmitting(false);
+      Alert.alert("Error", "You must be logged in to submit.");
+      return;
+    }
+
     const { error } = await supabase
       .from("challenge_activity")
       .insert({
-        challenge_id: "a0debf1a-4143-407f-9b64-cbcdd810c853", // Seminars & Conferences
+        user_id: user.id,
+        challenge_id: "a0debf1a-4143-407f-9b64-cbcdd810c853",
         status: "pending",
+        occurred_at: new Date().toISOString(),
         media_url: photoUri,
         metadata: {
           title: title.trim(),
@@ -109,10 +122,7 @@ export default function SeminarConfScreen() {
     setSubmitting(false);
 
     if (error) {
-      Alert.alert(
-        "Submission failed",
-        "Please try again."
-      );
+      Alert.alert("Submission failed", error.message);
       return;
     }
 
@@ -145,8 +155,7 @@ export default function SeminarConfScreen() {
                 500 Points{"\n"}
               </Text>
               Submit a seminar or conference you attended that contributed to
-              your professional growth. Please upload or take a photo of your
-              registration confirmation or event materials as proof.
+              your professional growth.
             </Text>
           </View>
 
@@ -247,28 +256,15 @@ const styles = StyleSheet.create({
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
   },
-
-  scrollContent: {
-    paddingBottom: 40,
-  },
-
-  headerText: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  icon: {
-    fontSize: 28,
-    marginBottom: 6,
-  },
-
+  scrollContent: { paddingBottom: 40 },
+  headerText: { alignItems: "center", marginBottom: 20 },
+  icon: { fontSize: 28, marginBottom: 6 },
   title: {
     fontSize: Typography.greeting.fontSize,
     fontWeight: Typography.greeting.fontWeight,
     color: Colors.textPrimary,
     textAlign: "center",
   },
-
   subtitle: {
     fontSize: Typography.quote.fontSize,
     color: Colors.textSecondary,
@@ -276,12 +272,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 20,
   },
-
-  subtitleBold: {
-    fontWeight: "700",
-    color: Colors.textPrimary,
-  },
-
+  subtitleBold: { fontWeight: "700", color: Colors.textPrimary },
   input: {
     backgroundColor: Colors.cards.journal,
     color: Colors.textPrimary,
@@ -289,7 +280,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.card,
     marginBottom: 10,
   },
-
   textArea: {
     backgroundColor: Colors.cards.journal,
     color: Colors.textPrimary,
@@ -298,21 +288,9 @@ const styles = StyleSheet.create({
     minHeight: 90,
     marginBottom: 16,
   },
-
-  photoSection: {
-    marginBottom: 20,
-  },
-
-  photoLabel: {
-    color: Colors.textSecondary,
-    marginBottom: 8,
-  },
-
-  photoButtons: {
-    flexDirection: "row",
-    gap: 12,
-  },
-
+  photoSection: { marginBottom: 20 },
+  photoLabel: { color: Colors.textSecondary, marginBottom: 8 },
+  photoButtons: { flexDirection: "row", gap: 12 },
   photoButton: {
     flex: 1,
     backgroundColor: Colors.cards.goals,
@@ -320,40 +298,17 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: "center",
   },
-
-  photoIcon: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-
-  photoText: {
-    color: Colors.textPrimary,
-    fontWeight: "700",
-  },
-
-  photoSelected: {
-    marginTop: 8,
-    color: Colors.textSecondary,
-    fontSize: 12,
-  },
-
+  photoIcon: { fontSize: 20, marginBottom: 4 },
+  photoText: { color: Colors.textPrimary, fontWeight: "700" },
+  photoSelected: { marginTop: 8, color: Colors.textSecondary, fontSize: 12 },
   submitButton: {
     backgroundColor: Colors.cards.complete,
     paddingVertical: 14,
     borderRadius: Radius.card,
     alignItems: "center",
   },
-
-  submitDisabled: {
-    opacity: 0.4,
-  },
-
-  submitText: {
-    color: Colors.textPrimary,
-    fontWeight: "700",
-    fontSize: 16,
-  },
-
+  submitDisabled: { opacity: 0.4 },
+  submitText: { color: Colors.textPrimary, fontWeight: "700", fontSize: 16 },
   bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,
@@ -361,26 +316,12 @@ const styles = StyleSheet.create({
     right: Spacing.screenPadding,
     alignItems: "center",
   },
-
-  bottomButtonRow: {
-    flexDirection: "row",
-    gap: 16,
-  },
-
+  bottomButtonRow: { flexDirection: "row", gap: 16 },
   backButton: {
     ...Components.backButton,
     flexDirection: "row",
     alignItems: "center",
   },
-
-  backIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-
-  backText: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  backIcon: { fontSize: 18, marginRight: 8 },
+  backText: { color: Colors.textPrimary, fontSize: 16, fontWeight: "700" },
 });

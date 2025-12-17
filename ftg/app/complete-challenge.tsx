@@ -1,5 +1,4 @@
-// app/complete-challenge.tsx
-
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import {
   Dimensions,
@@ -84,7 +83,16 @@ export default function CompleteChallengeScreen() {
               },
             ]}
           >
-            <Text style={styles.cardEmoji}>{item.icon}</Text>
+            {/* Corner bubble */}
+            <LinearGradient
+              colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
+              start={{ x: 1, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.cornerBubble}
+            >
+              <Text style={styles.bubbleIcon}>{item.icon}</Text>
+            </LinearGradient>
+
             <Text style={styles.cardTitle}>{item.label}</Text>
           </TouchableOpacity>
         ))}
@@ -151,14 +159,27 @@ const styles = StyleSheet.create({
 
   card: {
     borderRadius: Radius.card,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: Spacing.cardPadding,
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    paddingBottom: 14,
+    paddingLeft: 14,
+    overflow: "hidden",
   },
 
-  cardEmoji: {
-    fontSize: 28,
-    marginBottom: 6,
+  cornerBubble: {
+    position: "absolute",
+    top: -24,
+    right: -24,
+    width: 96,
+    height: 96,
+    borderRadius: 28,
+    justifyContent: "flex-end",
+    alignItems: "flex-start",
+    padding: 18,
+  },
+
+  bubbleIcon: {
+    fontSize: 26,
   },
 
   cardTitle: {
@@ -166,7 +187,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.cardTitle.fontWeight,
     lineHeight: Typography.cardTitle.lineHeight,
     color: Colors.textPrimary,
-    textAlign: "center",
+    textAlign: "left",
   },
 
   bottomBar: {

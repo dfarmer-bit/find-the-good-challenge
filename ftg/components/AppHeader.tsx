@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Image, ImageStyle, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
+import {
+  Image,
+  ImageStyle,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from "react-native";
 import { Colors, Layout, Radius, Typography } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
@@ -73,6 +81,9 @@ const styles = StyleSheet.create<Styles>({
     paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
+
+    // ✅ NEW — space BELOW header (global fix)
+    marginBottom: 24,
   },
 
   sideSlot: {

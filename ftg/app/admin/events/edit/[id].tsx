@@ -1,21 +1,21 @@
 import {
-  Colors,
-  Components,
-  Layout,
-  Radius,
-  Spacing,
-  Typography,
+    Colors,
+    Components,
+    Layout,
+    Radius,
+    Spacing,
+    Typography,
 } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function AdminEventDetail() {
@@ -149,11 +149,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: "rgba(255,255,255,0.08)", // same family as other cards
+    margin: 16,
+    padding: 16,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 2,
     borderColor: Colors.cards.complete,
     borderRadius: Radius.card,
-    padding: 16,
   },
 
   cardTitle: {

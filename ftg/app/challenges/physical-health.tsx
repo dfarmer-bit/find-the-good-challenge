@@ -1,3 +1,4 @@
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter, type Href } from "expo-router";
 import {
   StyleSheet,
@@ -36,7 +37,7 @@ export default function PhysicalHealthScreen() {
       label: "Walking",
       icon: "🚶",
       color: Colors.cards.goals,
-      route: "/challenges/walking",
+      route: "/challenges/physical-health/walking",
     },
     {
       label: "Other Physical",
@@ -59,13 +60,23 @@ export default function PhysicalHealthScreen() {
         {cards.map((card, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => {
-              if (card.route) router.push(card.route);
-            }}
+            onPress={() => card.route && router.push(card.route)}
             style={[styles.card, { backgroundColor: card.color }]}
           >
-            <Text style={styles.cardEmoji}>{card.icon}</Text>
-            <Text style={styles.cardTitle}>{card.label}</Text>
+            {/* Right-side vertical bubble */}
+            <LinearGradient
+              colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.sideBubble}
+            >
+              <Text style={styles.bubbleIcon}>{card.icon}</Text>
+            </LinearGradient>
+
+            {/* Text */}
+            <View style={styles.textWrapper}>
+              <Text style={styles.cardTitle}>{card.label}</Text>
+            </View>
           </TouchableOpacity>
         ))}
       </View>
@@ -122,29 +133,42 @@ const styles = StyleSheet.create({
   },
 
   cardColumn: {
-    alignItems: "center",
     gap: Spacing.gridGap,
   },
 
   card: {
     width: "100%",
+    height: 110,
     borderRadius: Radius.card,
     justifyContent: "center",
-    alignItems: "center",
-    paddingVertical: 18,
-    paddingHorizontal: Spacing.cardPadding,
+    overflow: "hidden",
   },
 
-  cardEmoji: {
-    fontSize: 28,
-    marginBottom: 6,
+  sideBubble: {
+    position: "absolute",
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 96,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  bubbleIcon: {
+    fontSize: 36,
+  },
+
+  textWrapper: {
+    paddingLeft: Spacing.cardPadding,
+    paddingRight: 110,
+    justifyContent: "center",
   },
 
   cardTitle: {
-    fontSize: Typography.cardTitle.fontSize,
-    fontWeight: Typography.cardTitle.fontWeight,
+    fontSize: 22,
+    fontWeight: "800",
     color: Colors.textPrimary,
-    textAlign: "center",
+    textAlign: "left",
   },
 
   bottomBar: {
