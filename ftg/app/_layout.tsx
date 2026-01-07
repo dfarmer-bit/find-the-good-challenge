@@ -1,15 +1,19 @@
 // app/_layout.tsx
+// FULL FILE REPLACEMENT
+// Fix: add Safe Area padding app-wide so Android bottom nav/gesture area doesn't cover your bottom buttons.
 
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
-export default function RootLayout() {
+function RootStack() {
   const router = useRouter();
   const segments = useSegments();
+  const insets = useSafeAreaInsets();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -61,8 +65,24 @@ export default function RootLayout() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: Colors.background,
+            paddingBottom: insets.bottom,
+          },
+        }}
+      />
       <StatusBar style="light" />
     </>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <RootStack />
+    </SafeAreaProvider>
   );
 }

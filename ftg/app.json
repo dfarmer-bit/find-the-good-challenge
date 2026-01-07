@@ -12,8 +12,10 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We use your camera so you can take a photo to confirm participation in events or activities you choose to log.",
-        "NSPhotoLibraryUsageDescription": "We use your photo library so you can upload a photo to confirm participation in events or activities you choose to log."
-      }
+        "NSPhotoLibraryUsageDescription": "We use your photo library so you can upload a photo to confirm participation in events or activities you choose to log.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.dsfarmer77.ftg"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +25,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "package": "com.dsfarmer77.ftg"
     },
     "web": {
       "output": "static",
@@ -43,11 +50,18 @@
           }
         }
       ],
-      "expo-audio"
+      "expo-audio",
+      "expo-mail-composer"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b4cd88cc-0005-4dfc-8d21-7887dc263b8b"
+      }
     }
   }
 }

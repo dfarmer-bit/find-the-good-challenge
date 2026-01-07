@@ -44,12 +44,18 @@ export default function GymActivateScreen() {
       // 3️⃣ Send to backend
       const result = await startGym(GYM_CHALLENGE_ID, lat, lng);
 
+      console.log(result);
+
       Alert.alert(
         "Submitted",
-        "Location submitted. If verified, approval and points will follow automatically."
+        "Location submitted. If verified, approval and points will follow automatically.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/challenges/physical-health"),
+          },
+        ]
       );
-
-      console.log(result);
     } catch (err: any) {
       Alert.alert("Error", err.message ?? "Something went wrong");
     }
@@ -84,9 +90,7 @@ export default function GymActivateScreen() {
             style={styles.primaryButton}
             onPress={handleSubmit}
           >
-            <Text style={styles.primaryButtonText}>
-              Activate This Gym
-            </Text>
+            <Text style={styles.primaryButtonText}>Activate This Gym</Text>
           </TouchableOpacity>
 
           <View style={{ height: 140 }} />

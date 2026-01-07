@@ -1,10 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
-import {
-    Colors,
-    Components,
-    Layout,
-    Spacing
-} from "@/constants/theme";
+import { Colors, Components, Layout, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { Pedometer } from "expo-sensors";
@@ -12,13 +7,17 @@ import { useEffect, useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const WALKING_CHALLENGE_ID = "0063a3bf-d013-4bee-8f72-47fd7fe39455";
+
+// DISPLAY GOAL ONLY (progress bar / milestones)
 const GOAL_TWO = 10000;
+
+// AWARD THRESHOLD (yesterday)
+const AWARD_THRESHOLD = 5000;
 
 export default function Walking() {
   const router = useRouter();
   const [stepsToday, setStepsToday] = useState(0);
   const [statusMessage, setStatusMessage] = useState("Syncing steps...");
-  const [deviceType, setDeviceType] = useState<"Phone" | "Wearable">("Phone");
 
   useEffect(() => {
     const run = async () => {
@@ -27,20 +26,7 @@ export default function Walking() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      // DEVICE TYPE
-      const { data: device } = await supabase
-        .from("user_device_connections")
-        .select("device_type")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setDeviceType(
-        device?.device_type && device.device_type !== "phone"
-          ? "Wearable"
-          : "Phone"
-      );
-
-      // YESTERDAY
+      // YESTERDAY RANGE
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       yesterday.setHours(0, 0, 0, 0);
@@ -50,38 +36,87 @@ export default function Walking() {
 
       const occurredDate = yesterday.toISOString().slice(0, 10);
 
+      // Already synced?
       const { data: existing } = await supabase
         .from("challenge_activity")
-        .select("id")
+        .select("id, status, metadata")
         .eq("user_id", user.id)
         .eq("challenge_id", WALKING_CHALLENGE_ID)
         .eq("occurred_date", occurredDate)
         .maybeSingle();
+
+      // Helper to format the status message consistently
+const setMessageFromSteps = (
+  steps: number,
+  qualifies: boolean,
+  already: boolean
+) => {
+  if (qualifies) {
+    setStatusMessage(
+      `${already ? "Yesterday already synced" : "Yesterday synced"} ✔️\n(${steps.toLocaleString()} steps — award earned)`
+    );
+  } else {
+    setStatusMessage(
+      `${already ? "Yesterday already synced" : "Yesterday synced"} (no award)\n${steps.toLocaleString()} steps (need ${AWARD_THRESHOLD.toLocaleString()})`
+    );
+  }
+};
 
       if (!existing) {
         const result = await Pedometer.getStepCountAsync(
           yesterday,
           yesterdayEnd
         );
+        const steps = result?.steps ?? 0;
 
-        if (result.steps > 0) {
+        if (steps > 0) {
+          const qualifies = steps >= AWARD_THRESHOLD;
+
           await supabase.from("challenge_activity").insert({
             user_id: user.id,
             challenge_id: WALKING_CHALLENGE_ID,
+            occurred_at: yesterdayEnd.toISOString(),
             occurred_date: occurredDate,
-            status: "approved",
+            status: qualifies ? "approved" : "pending",
             metadata: {
-              steps: result.steps,
-              source: deviceType.toLowerCase(),
+              steps,
+              source: "system",
+              threshold: AWARD_THRESHOLD,
+              qualifies,
             },
           });
 
-          setStatusMessage("Yesterday synced ✔️");
+          setMessageFromSteps(steps, qualifies, false);
         } else {
           setStatusMessage("No steps recorded yesterday");
         }
       } else {
-        setStatusMessage("Yesterday already synced ✔️");
+        const stepsRaw = (existing?.metadata as any)?.steps;
+        const steps = typeof stepsRaw === "number" ? stepsRaw : 0;
+        const qualifies = steps >= AWARD_THRESHOLD;
+
+        // If this row was created before the fix, it might be incorrectly "approved".
+        // Auto-correct the status to match the threshold.
+        const desiredStatus = qualifies ? "approved" : "pending";
+        if (existing.status !== desiredStatus) {
+          await supabase
+            .from("challenge_activity")
+            .update({
+              status: desiredStatus,
+              metadata: {
+                ...(existing?.metadata as any),
+                threshold: AWARD_THRESHOLD,
+                qualifies,
+              },
+            })
+            .eq("id", existing.id);
+        }
+
+        if (steps > 0) {
+          setMessageFromSteps(steps, qualifies, true);
+        } else {
+          setStatusMessage("Yesterday already synced");
+        }
       }
 
       // TODAY (DISPLAY ONLY)
@@ -92,8 +127,7 @@ export default function Walking() {
         todayStart,
         new Date()
       );
-
-      setStepsToday(todayResult.steps);
+      setStepsToday(todayResult?.steps ?? 0);
     };
 
     run();
@@ -106,37 +140,15 @@ export default function Walking() {
       <AppHeader />
 
       <View style={styles.content}>
-        {/* DEVICE STATUS */}
-        <Text style={styles.trackingTitle}>
-          Currently Tracking With:
-        </Text>
-        <Text style={styles.trackingValue}>{deviceType}</Text>
-
-        <TouchableOpacity
-          style={styles.changeButton}
-          onPress={() =>
-            router.push("/challenges/physical-health/connect-device")
-          }
-        >
-          <Text style={styles.changeText}>Change Device</Text>
-        </TouchableOpacity>
-
         {/* ICON */}
         <Text style={styles.icon}>🏃‍♂️</Text>
 
         {/* STEPS */}
-        <Text style={styles.steps}>
-          {stepsToday.toLocaleString()} steps today
-        </Text>
+        <Text style={styles.steps}>{stepsToday.toLocaleString()} steps today</Text>
 
         {/* PROGRESS BAR */}
         <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${progressPercent}%` },
-            ]}
-          />
+          <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
         </View>
 
         <View style={styles.milestones}>
@@ -149,9 +161,7 @@ export default function Walking() {
 
         <TouchableOpacity
           style={styles.rulesButton}
-          onPress={() =>
-            router.push("/challenges/physical-health/walking-rules")
-          }
+          onPress={() => router.push("/challenges/physical-health/walking-rules")}
         >
           <Text style={styles.rulesText}>📘 Rules & How This Works</Text>
         </TouchableOpacity>
@@ -160,17 +170,11 @@ export default function Walking() {
       {/* Bottom Navigation */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>⬅️ Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/main")}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/main")}>
             <Text style={styles.backText}>🏠 Home</Text>
           </TouchableOpacity>
         </View>
@@ -188,28 +192,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: Spacing.screenPadding,
-    justifyContent: "center",
-  },
-  trackingTitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: "center",
-  },
-  trackingValue: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: Colors.textPrimary,
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  changeButton: {
-    alignSelf: "center",
-    marginBottom: 18,
-  },
-  changeText: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: Colors.cards.goals,
+    justifyContent: "flex-start",
+    paddingTop: 48, // moves the center block higher (but not to the top)
   },
   icon: {
     fontSize: 44,

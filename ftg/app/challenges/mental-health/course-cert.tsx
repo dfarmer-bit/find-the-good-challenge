@@ -183,7 +183,7 @@ export default function CourseCertScreen() {
 
           <View style={styles.photoSection}>
             <Text style={styles.photoLabel}>
-              Proof (optional but encouraged)
+              Proof (mandatory for points award)
             </Text>
 
             <View style={styles.photoButtons}>

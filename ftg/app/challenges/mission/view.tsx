@@ -1,13 +1,11 @@
-// app/challenges/mission/insights.tsx
-
 import { AppHeader } from "@/components/AppHeader";
 import {
   Colors,
-  Components,
   Layout,
   Radius,
   Spacing,
   Typography,
+  Components,
 } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
@@ -33,77 +31,46 @@ function escapeHtml(input: string) {
     .replaceAll("'", "&#039;");
 }
 
-export default function MissionInsightsScreen() {
+export default function MissionView() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [reflection, setReflection] = useState<string | null>(null);
+  const [missionText, setMissionText] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    const loadInsights = async () => {
+    const load = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
+        setMissionText(null);
         setLoading(false);
         return;
       }
 
-      // Load mission + answers + reflection
-      const { data: row } = await supabase
+      const { data, error } = await supabase
         .from("personal_missions")
-        .select("mission_text, answers, reflection_text")
+        .select("mission_text")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      // If they haven't accepted/saved yet, send them to the mission hub
-      if (!row?.mission_text || !row?.answers) {
-        setLoading(false);
-        router.replace("/challenges/mission");
-        return;
-      }
-
-      // If we already have reflection, show it
-      if (row.reflection_text) {
-        setReflection(row.reflection_text);
+      if (error) {
+        setMissionText(null);
         setLoading(false);
         return;
       }
 
-      // Otherwise generate reflection using BOTH mission + answers
-      const { data } = await supabase.functions.invoke(
-        "generate-mission-reflection",
-        {
-          body: {
-            mission_text: row.mission_text,
-            answers: row.answers,
-          },
-        }
-      );
-
-      if (data?.reflection_text) {
-        await supabase
-          .from("personal_missions")
-          .update({ reflection_text: data.reflection_text })
-          .eq("user_id", user.id);
-
-        setReflection(data.reflection_text);
-      } else {
-        setReflection(
-          "Your mission insights are not available yet. Please try again."
-        );
-      }
-
+      setMissionText(data?.mission_text ?? null);
       setLoading(false);
     };
 
-    loadInsights();
+    load();
   }, []);
 
   const pdfHtml = useMemo(() => {
-    const safeText = escapeHtml(reflection ?? "");
+    const safeText = escapeHtml(missionText ?? "");
     return `
       <html>
         <head>
@@ -117,17 +84,17 @@ export default function MissionInsightsScreen() {
           </style>
         </head>
         <body>
-          <h1>Mission Insights</h1>
+          <h1>Personal Mission Statement</h1>
           <div class="box">
             <p>${safeText}</p>
           </div>
         </body>
       </html>
     `;
-  }, [reflection]);
+  }, [missionText]);
 
   const handleExportPdf = async () => {
-    if (!reflection) return;
+    if (!missionText) return;
     if (exporting) return;
 
     try {
@@ -147,7 +114,7 @@ export default function MissionInsightsScreen() {
 
       await Sharing.shareAsync(uri, {
         mimeType: "application/pdf",
-        dialogTitle: "Export Mission Insights (PDF)",
+        dialogTitle: "Export Mission Statement (PDF)",
         UTI: "com.adobe.pdf",
       });
     } catch (e) {
@@ -169,43 +136,54 @@ export default function MissionInsightsScreen() {
     <View style={styles.container}>
       <AppHeader />
 
-      <View style={styles.headerText}>
-        <Text style={styles.title}>Mission Insights</Text>
-        <Text style={styles.subtitle}>
-          A reflection based on your answers and mission statement
-        </Text>
-      </View>
-
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity
-          style={[styles.exportButton, exporting && styles.exportDisabled]}
-          onPress={handleExportPdf}
-          disabled={exporting || !reflection}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.exportText}>
-            {exporting ? "Preparing PDF..." : "Export / Share PDF"}
-          </Text>
-        </TouchableOpacity>
+        <Text style={styles.title}>Personal Mission Statement</Text>
 
-        <View style={styles.card}>
-          <Text style={styles.reflectionText}>
-            {reflection ??
-              "Your mission insights will appear here once they are available."}
-          </Text>
-        </View>
+        {missionText ? (
+          <>
+            <TouchableOpacity
+              style={[styles.exportButton, exporting && styles.exportDisabled]}
+              onPress={handleExportPdf}
+              disabled={exporting}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.exportText}>
+                {exporting ? "Preparing PDF..." : "Export / Share PDF"}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.card}>
+              <Text style={styles.missionText}>{missionText}</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.emptyWrap}>
+            <Text style={styles.emptyTitle}>No mission statement found</Text>
+            <Text style={styles.emptySubtitle}>
+              Start your mission statement to unlock viewing and insights.
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.startButton,
+                { backgroundColor: Colors.cards.complete },
+              ]}
+              onPress={() => router.push("/challenges/mission/step-1")}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.startButtonText}>Start My Personal Mission</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Bottom Navigation (matches Spiritual Health) */}
+      {/* Bottom Navigation (match Spiritual Health pattern) */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backIcon}>⬅️</Text>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
@@ -238,27 +216,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
 
-  headerText: {
-    alignItems: "center",
-    marginBottom: 20,
+  scroll: {
+    paddingBottom: 180,
+    paddingTop: 28,
   },
 
   title: {
     fontSize: Typography.greeting.fontSize,
     fontWeight: Typography.greeting.fontWeight,
     color: Colors.textPrimary,
-    marginBottom: 4,
     textAlign: "center",
-  },
-
-  subtitle: {
-    fontSize: Typography.quote.fontSize,
-    color: Colors.textSecondary,
-    textAlign: "center",
-  },
-
-  scrollContent: {
-    paddingBottom: 180,
+    marginBottom: 14,
   },
 
   exportButton: {
@@ -282,13 +250,50 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.cards.journal,
     borderRadius: Radius.card,
-    padding: Spacing.cardPadding,
+    padding: 18,
   },
 
-  reflectionText: {
-    fontSize: 15,
-    lineHeight: 22,
+  missionText: {
     color: Colors.textPrimary,
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: "left",
+  },
+
+  emptyWrap: {
+    alignItems: "center",
+    paddingTop: 10,
+  },
+
+  emptyTitle: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "800",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+
+  emptySubtitle: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 16,
+    lineHeight: 18,
+    maxWidth: 320,
+  },
+
+  startButton: {
+    borderRadius: Radius.card,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    width: "100%",
+  },
+
+  startButtonText: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "800",
   },
 
   bottomBar: {

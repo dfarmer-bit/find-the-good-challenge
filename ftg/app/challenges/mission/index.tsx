@@ -1,11 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
-import {
-  Colors,
-  Components,
-  Layout,
-  Radius,
-  Spacing,
-} from "@/constants/theme";
+import { Colors, Components, Layout, Radius, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -20,7 +14,7 @@ import { useMission } from "./MissionContext";
 
 export default function MissionIndex() {
   const router = useRouter();
-  const { loadAnswers, reset } = useMission();
+  const { reset } = useMission();
 
   const [loading, setLoading] = useState(true);
   const [hasMission, setHasMission] = useState(false);
@@ -38,11 +32,11 @@ export default function MissionIndex() {
 
       const { data } = await supabase
         .from("personal_missions")
-        .select("answers")
+        .select("mission_text")
         .eq("user_id", user.id)
         .maybeSingle();
 
-      setHasMission(!!data);
+      setHasMission(!!data?.mission_text);
       setLoading(false);
     };
 
@@ -54,22 +48,8 @@ export default function MissionIndex() {
     router.push("/challenges/mission/step-1");
   };
 
-  const handleRevise = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    const { data } = await supabase
-      .from("personal_missions")
-      .select("answers")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!data) return;
-
-    loadAnswers(data.answers);
+  const handleRevise = () => {
+    reset();
     router.push("/challenges/mission/step-1");
   };
 
@@ -82,7 +62,7 @@ export default function MissionIndex() {
   }
 
   return (
-    <View style={styles.screen}>
+    <View style={styles.container}>
       <AppHeader />
 
       <View style={styles.content}>
@@ -97,10 +77,9 @@ export default function MissionIndex() {
             <TouchableOpacity
               style={[styles.button, styles.startButton]}
               onPress={handleStart}
+              activeOpacity={0.85}
             >
-              <Text style={styles.buttonText}>
-                Start My Personal Mission
-              </Text>
+              <Text style={styles.buttonText}>Start My Personal Mission</Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -111,73 +90,76 @@ export default function MissionIndex() {
 
             <TouchableOpacity
               style={[styles.button, styles.viewButton]}
-              onPress={() =>
-                router.push("/challenges/mission/review")
-              }
+              onPress={() => router.push("/challenges/mission/view")}
+              activeOpacity={0.85}
             >
-              <Text style={styles.buttonText}>
-                View Mission Statement
-              </Text>
+              <Text style={styles.buttonText}>View Mission Statement</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.button, styles.insightsButton]}
-              onPress={() =>
-                router.push("/challenges/mission/insights")
-              }
+              onPress={() => router.push("/challenges/mission/insights")}
+              activeOpacity={0.85}
             >
-              <Text style={styles.buttonText}>
-                View Mission Insights
-              </Text>
+              <Text style={styles.buttonText}>View Mission Insights</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.button, styles.reviseButton]}
               onPress={handleRevise}
+              activeOpacity={0.85}
             >
-              <Text style={styles.buttonText}>
-                Revise Mission Statement
-              </Text>
+              <Text style={styles.buttonText}>Revise Mission Statement</Text>
             </TouchableOpacity>
 
             <Text style={styles.disclaimer}>
-              Points are awarded only for the initial submission of your
-              Personal Mission Statement. You are encouraged to revise
-              your mission as your journey evolves. Revised mission
-              statements will generate updated insights.
+              Points are awarded only for the initial submission of your Personal
+              Mission Statement. You are encouraged to revise your mission as
+              your journey evolves. Revised mission statements will generate
+              updated insights.
             </Text>
           </>
         )}
       </View>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={Components.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backText}>⬅ Back</Text>
-        </TouchableOpacity>
+      {/* Bottom Navigation (matches Spiritual Health) */}
+      <View style={styles.bottomBar}>
+        <View style={styles.bottomButtonRow}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backIcon}>⬅️</Text>
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/main")}
+          >
+            <Text style={styles.backIcon}>🏠</Text>
+            <Text style={styles.backText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
+    paddingHorizontal: Spacing.screenPadding,
   },
 
   loading: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.background,
   },
 
   content: {
     flex: 1,
-    paddingHorizontal: Spacing.screenPadding,
     justifyContent: "flex-start",
     paddingTop: 80,
   },
@@ -205,19 +187,19 @@ const styles = StyleSheet.create({
   },
 
   startButton: {
-    backgroundColor: "#FF9F1C", // warm amber (start)
+    backgroundColor: "#FF9F1C",
   },
 
   viewButton: {
-    backgroundColor: "#2EC4B6", // calm teal (read)
+    backgroundColor: "#2EC4B6",
   },
 
   insightsButton: {
-    backgroundColor: "#FF5DA2", // reflective rose (insights)
+    backgroundColor: "#FF5DA2",
   },
 
   reviseButton: {
-    backgroundColor: "#9B5DE5", // purposeful purple (revise)
+    backgroundColor: "#9B5DE5",
   },
 
   buttonText: {
@@ -234,12 +216,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  footer: {
+  bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,
     left: Spacing.screenPadding,
     right: Spacing.screenPadding,
     alignItems: "center",
+  },
+
+  bottomButtonRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+
+  backButton: {
+    ...Components.backButton,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  backIcon: {
+    fontSize: 18,
+    marginRight: 8,
   },
 
   backText: {

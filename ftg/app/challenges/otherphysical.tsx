@@ -1,12 +1,7 @@
 // app/challenges/otherphysical.tsx
 
 import { useRouter } from "expo-router";
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppHeader } from "../../components/AppHeader";
 import {
   Colors,
@@ -32,6 +27,7 @@ export default function OtherPhysicalScreen() {
       label: "Participate in Group / Class",
       icon: "👥",
       color: Colors.cards.complete,
+      // ✅ folder is a sibling of this file; route stays the same
       route: "/challenges/otherphysical/group-class",
     },
     {
@@ -57,7 +53,6 @@ export default function OtherPhysicalScreen() {
         <Text style={styles.subtitle}>Choose an activity</Text>
       </View>
 
-      {/* STACKED — SAME CARD DESIGN AS PHYSICAL HEALTH */}
       <View style={styles.cardColumn}>
         {cards.map((card, index) => (
           <TouchableOpacity
@@ -65,10 +60,7 @@ export default function OtherPhysicalScreen() {
             onPress={() => {
               if (card.route) router.push(card.route as any);
             }}
-            style={[
-              styles.card,
-              { backgroundColor: card.color },
-            ]}
+            style={[styles.card, { backgroundColor: card.color }]}
           >
             <Text style={styles.cardEmoji}>{card.icon}</Text>
             <Text style={styles.cardTitle}>{card.label}</Text>
@@ -78,10 +70,7 @@ export default function OtherPhysicalScreen() {
 
       {/* Bottom Back */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backIcon}>⬅️</Text>
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
@@ -122,7 +111,6 @@ const styles = StyleSheet.create({
     gap: Spacing.gridGap,
   },
 
-  // ✅ SAME CARD DESIGN — just stacked & larger
   card: {
     width: "100%",
     borderRadius: Radius.card,

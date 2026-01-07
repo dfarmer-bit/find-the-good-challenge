@@ -1,5 +1,3 @@
-// supabase/functions/generate-mission-statement/index.ts
-
 /// <reference lib="deno.ns" />
 
 import OpenAI from "https://esm.sh/openai@4.28.0";
@@ -17,13 +15,12 @@ You are helping a person create a clear, warm, thorough Personal Mission Stateme
 
 RULES:
 - Output ONLY the mission statement text (no headings, no bullets, no labels).
-- Make it easy to read, but detailed and personal.
 - 320–420 words.
 - Tone: calm, grounded, non-judgmental, encouraging.
 - Use first person ("I").
 - Avoid clichés and generic corporate language.
-- The mission should feel specific to the user's answers.
-- Write as a single narrative (paragraphs allowed, but no lists).
+- Make it feel specific to the user's answers.
+- Write as a narrative (paragraphs allowed, but no lists).
 
 USER ANSWERS (JSON):
 ${JSON.stringify(answers, null, 2)}
@@ -35,8 +32,7 @@ ${JSON.stringify(answers, null, 2)}
       temperature: 0.55,
     });
 
-    const mission_text = (completion.choices?.[0]?.message?.content ?? "")
-      .trim();
+    const mission_text = (completion.choices?.[0]?.message?.content ?? "").trim();
 
     return new Response(JSON.stringify({ mission_text }), {
       headers: { "Content-Type": "application/json" },

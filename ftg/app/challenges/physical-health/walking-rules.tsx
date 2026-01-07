@@ -1,11 +1,5 @@
 import { AppHeader } from "@/components/AppHeader";
-import {
-    Colors,
-    Components,
-    Layout,
-    Spacing,
-    Typography,
-} from "@/constants/theme";
+import { Colors, Components, Layout, Spacing, Typography } from "@/constants/theme";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
@@ -20,8 +14,7 @@ export default function WalkingRules() {
         <Text style={styles.title}>Walking Challenge Rules</Text>
 
         <Text style={styles.sectionTitle}>How points work</Text>
-        <Text style={styles.text}>• Steps are tracked using one device you choose</Text>
-        <Text style={styles.text}>• Steps are reviewed once per day</Text>
+        <Text style={styles.text}>• Steps are checked once per day</Text>
         <Text style={styles.text}>• Only yesterday’s steps count toward points</Text>
         <Text style={styles.text}>• Points are awarded automatically</Text>
 
@@ -29,43 +22,43 @@ export default function WalkingRules() {
         <Text style={styles.text}>• 5,000 steps earns points</Text>
         <Text style={styles.text}>• 10,000 steps earns bonus points</Text>
 
-        <Text style={styles.sectionTitle}>Your device matters</Text>
-        <Text style={styles.text}>• Carry your phone if you selected phone tracking</Text>
-        <Text style={styles.text}>• Wear your watch or Fitbit during activity</Text>
+        <Text style={styles.sectionTitle}>Using a phone or watch</Text>
         <Text style={styles.text}>
-          • If you don’t wear or carry your selected device, steps will not count
+          • You can earn credit using your phone OR a synced wearable (Apple Watch / Android Watch)
+        </Text>
+        <Text style={styles.text}>
+          • If you use a watch, your steps must sync to your phone for them to count
+        </Text>
+
+        <Text style={styles.sectionTitle}>Apple Watch tips</Text>
+        <Text style={styles.text}>• Keep your Apple Watch paired to your iPhone</Text>
+        <Text style={styles.text}>• Make sure motion/fitness permissions are enabled</Text>
+        <Text style={styles.text}>• Watch steps usually count even if your phone stays on the desk</Text>
+
+        <Text style={styles.sectionTitle}>Android Watch tips</Text>
+        <Text style={styles.text}>
+          • Make sure your watch is syncing steps to your phone’s health/fitness app (varies by device)
+        </Text>
+        <Text style={styles.text}>
+          • Some Android devices may not include watch steps perfectly in the phone’s total
+        </Text>
+        <Text style={styles.text}>
+          • If your totals look low, open your watch/fitness app first, then open this app to sync
         </Text>
 
         <Text style={styles.sectionTitle}>Opening the app</Text>
-        <Text style={styles.text}>
-          • Open the app at least once a day to sync steps
-        </Text>
-        <Text style={styles.text}>
-          • Today’s steps are shown for progress only
-        </Text>
-
-        <Text style={styles.sectionTitle}>Changing devices</Text>
-        <Text style={styles.text}>• You can change your device at any time</Text>
-        <Text style={styles.text}>
-          • A new device is used starting the next day
-        </Text>
-        <Text style={styles.text}>• Past days are not changed</Text>
+        <Text style={styles.text}>• Open the app at least once a day to sync steps</Text>
+        <Text style={styles.text}>• Today’s steps are shown for progress only</Text>
       </ScrollView>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>⬅️ Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/main")}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/main")}>
             <Text style={styles.backText}>🏠 Home</Text>
           </TouchableOpacity>
         </View>

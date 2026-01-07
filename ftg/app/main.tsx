@@ -1,7 +1,11 @@
+// app/main.tsx
+// FULL FILE REPLACEMENT
+// Change: Bonus badge = open quizzes + open admin assignments + open growth missions (not submitted)
+
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useFocusEffect, useRouter, type Href } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Dimensions,
   StyleSheet,
@@ -61,6 +65,8 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [firstName, setFirstName] = useState<string>("");
 
+  const [bonusCount, setBonusCount] = useState<number>(0);
+
   const baseSize =
     (screenWidth - Spacing.screenPadding * 2 - Spacing.gridGap) / 2;
 
@@ -72,69 +78,146 @@ export default function HomeScreen() {
     return DAILY_QUOTES[dayIndex];
   }, []);
 
-  useEffect(() => {
-    const loadData = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const loadData = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) return;
+    if (!user) return;
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", user.id)
-        .single();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", user.id)
+      .single();
 
-      if (profile?.full_name) {
-        setFirstName(profile.full_name.split(" ")[0]);
-      }
+    if (profile?.full_name) {
+      setFirstName(profile.full_name.split(" ")[0]);
+    }
 
-      const now = new Date();
-      const localDate = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
-      )
-        .toISOString()
-        .split("T")[0];
+    const now = new Date();
+    const localDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      .toISOString()
+      .split("T")[0];
 
-      const { data: existing } = await supabase
-        .from("challenge_activity")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("activity_type", "login_streak")
-        .eq("occurred_date", localDate)
-        .maybeSingle();
+    const { data: existing } = await supabase
+      .from("challenge_activity")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("activity_type", "login_streak")
+      .eq("occurred_date", localDate)
+      .maybeSingle();
 
-      if (!existing) {
-        await supabase.from("challenge_activity").insert({
-          user_id: user.id,
-          activity_type: "login_streak",
-          occurred_date: localDate,
-          status: "approved",
-        });
-      }
-
-      const { data: streak } = await supabase.rpc("get_login_streak", {
-        p_user_id: user.id,
+    if (!existing) {
+      await supabase.from("challenge_activity").insert({
+        user_id: user.id,
+        activity_type: "login_streak",
+        occurred_date: localDate,
+        status: "approved",
       });
+    }
 
-      if (typeof streak === "number") {
-        setLoginStreak(streak);
-      }
+    const { data: streak } = await supabase.rpc("get_login_streak", {
+      p_user_id: user.id,
+    });
 
-      const { count } = await supabase
-        .from("messages")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_id", user.id)
-        .eq("is_read", false);
+    if (typeof streak === "number") {
+      setLoginStreak(streak);
+    }
 
-      setUnreadCount(count ?? 0);
-    };
+    const { count } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("recipient_id", user.id)
+      .eq("is_read", false);
 
-    loadData();
+    setUnreadCount(count ?? 0);
+
+    // ✅ Bonus badge count = open items across all three bonus areas
+    const nowIso = new Date().toISOString();
+    let openTotal = 0;
+
+    // -------- Quizzes (open published in window minus submissions)
+    const { data: openQuizzes, error: quizErr } = await supabase
+      .from("quizzes")
+      .select("id")
+      .eq("status", "published")
+      .lte("publish_start", nowIso)
+      .gt("publish_end", nowIso);
+
+    if (!quizErr && Array.isArray(openQuizzes) && openQuizzes.length > 0) {
+      const ids = openQuizzes.map((q: any) => q.id);
+
+      const { data: subs, error: subsErr } = await supabase
+        .from("quiz_submissions")
+        .select("quiz_id")
+        .eq("user_id", user.id)
+        .in("quiz_id", ids);
+
+      const submitted = new Set<string>();
+      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.quiz_id));
+
+      openTotal += ids.filter((qid) => !submitted.has(qid)).length;
+    }
+
+    // -------- Admin Assignments (open published in window minus submissions)
+    const { data: openAdmin, error: adminErr } = await supabase
+      .from("admin_assignments")
+      .select("id")
+      .eq("status", "published")
+      .lte("publish_start", nowIso)
+      .gt("publish_end", nowIso);
+
+    if (!adminErr && Array.isArray(openAdmin) && openAdmin.length > 0) {
+      const ids = openAdmin.map((a: any) => a.id);
+
+      const { data: subs, error: subsErr } = await supabase
+        .from("admin_assignment_submissions")
+        .select("assignment_id")
+        .eq("user_id", user.id)
+        .in("assignment_id", ids);
+
+      const submitted = new Set<string>();
+      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.assignment_id));
+
+      openTotal += ids.filter((aid) => !submitted.has(aid)).length;
+    }
+
+    // -------- Growth Missions (open published in window minus submissions)
+    const { data: openGrowth, error: growthErr } = await supabase
+      .from("growth_missions")
+      .select("id")
+      .eq("status", "published")
+      .lte("publish_start", nowIso)
+      .gt("publish_end", nowIso);
+
+    if (!growthErr && Array.isArray(openGrowth) && openGrowth.length > 0) {
+      const ids = openGrowth.map((g: any) => g.id);
+
+      const { data: subs, error: subsErr } = await supabase
+        .from("growth_mission_submissions")
+        .select("mission_id")
+        .eq("user_id", user.id)
+        .in("mission_id", ids);
+
+      const submitted = new Set<string>();
+      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.mission_id));
+
+      openTotal += ids.filter((mid) => !submitted.has(mid)).length;
+    }
+
+    setBonusCount(openTotal);
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -152,7 +235,7 @@ export default function HomeScreen() {
       label: "Events",
       icon: "📅",
       color: Colors.cards.goals,
-      route: "/events", // 👈 connected here
+      route: "/events",
     },
     {
       label: "Spotlight",
@@ -176,6 +259,7 @@ export default function HomeScreen() {
       label: "Bonus\nPoints",
       icon: "🎁",
       color: "#FF5DA2",
+      route: "/challenges/bonus",
     },
     {
       label: "Admin\nDashboard",
@@ -207,13 +291,12 @@ export default function HomeScreen() {
       <View style={styles.cardGrid}>
         {cards.map((card, index) => {
           const isMessages = card.label === "Messages";
+          const isBonus = card.label === "Bonus\nPoints";
 
           return (
             <TouchableOpacity
               key={index}
-              onPress={() => {
-                if (card.route) router.push(card.route);
-              }}
+              onPress={() => card.route && router.push(card.route)}
               style={[
                 styles.card,
                 {
@@ -232,8 +315,14 @@ export default function HomeScreen() {
                 <Text style={styles.bubbleIcon}>{card.icon}</Text>
               </LinearGradient>
 
-              {isMessages && unreadCount > 0 && (
-                <View style={styles.badge} />
+              {isMessages && unreadCount > 0 && <View style={styles.badgeDot} />}
+
+              {isBonus && bonusCount > 0 && (
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>
+                    {bonusCount > 99 ? "99+" : String(bonusCount)}
+                  </Text>
+                </View>
               )}
 
               <Text style={styles.cardTitle}>{card.label}</Text>
@@ -321,7 +410,8 @@ const styles = StyleSheet.create({
   bubbleIcon: {
     fontSize: 24,
   },
-  badge: {
+
+  badgeDot: {
     position: "absolute",
     top: 10,
     right: 12,
@@ -330,6 +420,27 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: "#FF4D4F",
   },
+
+  countBadge: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: "#FF4D4F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  countBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+    includeFontPadding: false,
+  },
+
   cardTitle: {
     fontSize: Typography.cardTitle.fontSize,
     fontWeight: Typography.cardTitle.fontWeight,

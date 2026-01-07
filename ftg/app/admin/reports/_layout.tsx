@@ -1,9 +1,6 @@
-// app/events/_layout.tsx
-// FULL FILE REPLACEMENT
-
 import { Stack } from "expo-router";
 
-export default function EventsLayout() {
+export default function ReportsLayout() {
   return (
     <Stack
       screenOptions={{
