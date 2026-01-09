@@ -1,23 +1,33 @@
 // app/main.tsx
 // FULL FILE REPLACEMENT
-// Change: Bonus badge = open quizzes + open admin assignments + open growth missions (not submitted)
+// DESIGN-ONLY updates requested:
+// - Featured card moved up ~1/8" more (marginTop -12 → -24)
+// - Center logo/core reduced by ~20% (hubCore 116→93, hubLogo 80→64)
+// - NO logic/data changes
+//
+// UPDATE (Survey badge + link only):
+// - Adds a red dot badge on the Survey card when a survey is open AND not yet submitted
+// - Survey card already routes to /survey; no other routing/layout changes
 
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Animated,
   Dimensions,
+  Easing,
+  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { AppHeader } from "../components/AppHeader";
-import { Colors, Layout, Radius, Spacing, Typography } from "../constants/theme";
+import { Colors, Layout, Radius, Spacing } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
 type CardItem = {
+  key: string;
   label: string;
   icon: string;
   color: string;
@@ -64,19 +74,85 @@ export default function HomeScreen() {
   const [loginStreak, setLoginStreak] = useState<number>(0);
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [firstName, setFirstName] = useState<string>("");
-
   const [bonusCount, setBonusCount] = useState<number>(0);
 
-  const baseSize =
-    (screenWidth - Spacing.screenPadding * 2 - Spacing.gridGap) / 2;
+  // ✅ Survey badge state
+  const [surveyAvailable, setSurveyAvailable] = useState<boolean>(false);
 
-  const cardWidth = baseSize * Layout.cardScale;
-  const cardHeight = cardWidth * 0.85;
+  // featured rotation index (hub only)
+  const [featuredIndex, setFeaturedIndex] = useState<number>(0);
 
   const dailyQuote = useMemo(() => {
     const dayIndex = new Date().getDate() % DAILY_QUOTES.length;
     return DAILY_QUOTES[dayIndex];
   }, []);
+
+  // --- subtle “gamey” pulse for featured (design only)
+  const pulse = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 1400,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [pulse]);
+
+  // --- tiny sparkle twinkle (design only)
+  const twinkle = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(twinkle, {
+          toValue: 1,
+          duration: 1800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(twinkle, {
+          toValue: 0,
+          duration: 1800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [twinkle]);
+
+  // --- subtle drift for the center logo (design only)
+  const logoFloat = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(logoFloat, {
+          toValue: 1,
+          duration: 2400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(logoFloat, {
+          toValue: 0,
+          duration: 2400,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [logoFloat]);
 
   const loadData = useCallback(async () => {
     const {
@@ -155,7 +231,8 @@ export default function HomeScreen() {
         .in("quiz_id", ids);
 
       const submitted = new Set<string>();
-      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.quiz_id));
+      if (!subsErr && Array.isArray(subs))
+        subs.forEach((s: any) => submitted.add(s.quiz_id));
 
       openTotal += ids.filter((qid) => !submitted.has(qid)).length;
     }
@@ -178,7 +255,8 @@ export default function HomeScreen() {
         .in("assignment_id", ids);
 
       const submitted = new Set<string>();
-      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.assignment_id));
+      if (!subsErr && Array.isArray(subs))
+        subs.forEach((s: any) => submitted.add(s.assignment_id));
 
       openTotal += ids.filter((aid) => !submitted.has(aid)).length;
     }
@@ -201,12 +279,41 @@ export default function HomeScreen() {
         .in("mission_id", ids);
 
       const submitted = new Set<string>();
-      if (!subsErr && Array.isArray(subs)) subs.forEach((s: any) => submitted.add(s.mission_id));
+      if (!subsErr && Array.isArray(subs))
+        subs.forEach((s: any) => submitted.add(s.mission_id));
 
       openTotal += ids.filter((mid) => !submitted.has(mid)).length;
     }
 
     setBonusCount(openTotal);
+
+    // ✅ Survey badge: open week exists AND user has not submitted it
+    let showSurvey = false;
+
+    const { data: openSurveyWeek, error: surveyWeekErr } = await supabase
+      .from("weekly_survey_instances")
+      .select("week_start_date")
+      .eq("is_active", true)
+      .lte("publish_start", nowIso)
+      .gte("publish_end", nowIso)
+      .order("week_start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!surveyWeekErr && openSurveyWeek?.week_start_date) {
+      const { data: submittedSurvey, error: surveySubErr } = await supabase
+        .from("weekly_survey_submissions")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("week_start_date", openSurveyWeek.week_start_date)
+        .maybeSingle();
+
+      if (!surveySubErr && !submittedSurvey) {
+        showSurvey = true;
+      }
+    }
+
+    setSurveyAvailable(showSurvey);
   }, []);
 
   useEffect(() => {
@@ -219,123 +326,372 @@ export default function HomeScreen() {
     }, [loadData])
   );
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace("/");
+  // --- Hub (these 5) — one-word labels
+  const wheelCards: CardItem[] = useMemo(
+    () => [
+      {
+        key: "events",
+        label: "Events",
+        icon: "📅",
+        color: Colors.cards.goals,
+        route: "/events" as Href,
+      },
+      {
+        key: "complete",
+        label: "Challenges",
+        icon: "⭐",
+        color: Colors.cards.complete,
+        route: "/complete-challenge" as Href,
+      },
+      {
+        key: "bonus",
+        label: "Bonuses",
+        icon: "🎁",
+        color: "#FF5DA2",
+        route: "/challenges/bonus" as Href,
+      },
+      {
+        key: "goals",
+        label: "Goals",
+        icon: "🎯",
+        color: "#2EC4B6",
+        route: "/challenges/goals" as Href,
+      },
+      {
+        key: "spotlight",
+        label: "Spotlight",
+        icon: "🌟",
+        color: Colors.cards.journal,
+        route: "/spotlight" as Href,
+      },
+    ],
+    []
+  );
+
+  // --- Featured rotates ONLY among hub items (design only)
+  const featuredWheelCard = useMemo(() => {
+    const safeIndex =
+      ((featuredIndex % wheelCards.length) + wheelCards.length) %
+      wheelCards.length;
+    return wheelCards[safeIndex];
+  }, [featuredIndex, wheelCards]);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setFeaturedIndex((i) => (i + 1) % wheelCards.length);
+    }, 8000);
+    return () => clearInterval(t);
+  }, [wheelCards.length]);
+
+  // --- Bottom mini row (3)
+  const bottomCards: CardItem[] = useMemo(
+    () => [
+      {
+        key: "survey",
+        label: "Survey",
+        icon: "📝",
+        color: "#6DA8FF",
+        route: "/survey" as Href,
+      },
+      {
+        key: "training",
+        label: "Annual Training",
+        icon: "🎓",
+        color: "#8B5CF6",
+        route: "/annual-training" as Href,
+      },
+      {
+        key: "messages",
+        label: "Messages",
+        icon: "💬",
+        color: Colors.cards.messages,
+        route: "/messages" as Href,
+      },
+    ],
+    []
+  );
+
+  const pulseScale = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.018],
+  });
+
+  const twinkleOpacity = twinkle.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.22, 0.65],
+  });
+
+  const logoFloatY = logoFloat.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -6],
+  });
+
+  const renderBadge = (cardKey: string) => {
+    if (cardKey === "messages" && unreadCount > 0)
+      return <View style={styles.badgeDot} />;
+    if (cardKey === "bonus" && bonusCount > 0)
+      return (
+        <View style={styles.countBadge}>
+          <Text style={styles.countBadgeText}>
+            {bonusCount > 99 ? "99+" : String(bonusCount)}
+          </Text>
+        </View>
+      );
+    if (cardKey === "survey" && surveyAvailable)
+      return <View style={styles.badgeDot} />;
+    return null;
   };
 
-  const cards: CardItem[] = [
-    {
-      label: "Complete\nChallenge",
-      icon: "⭐",
-      color: Colors.cards.complete,
-      route: "/complete-challenge",
-    },
-    {
-      label: "Events",
-      icon: "📅",
-      color: Colors.cards.goals,
-      route: "/events",
-    },
-    {
-      label: "Spotlight",
-      icon: "🌟",
-      color: Colors.cards.journal,
-      route: "/spotlight",
-    },
-    {
-      label: "Goals",
-      icon: "🎯",
-      color: "#2EC4B6",
-      route: "/challenges/goals",
-    },
-    {
-      label: "Messages",
-      icon: "💬",
-      color: Colors.cards.messages,
-      route: "/messages",
-    },
-    {
-      label: "Bonus\nPoints",
-      icon: "🎁",
-      color: "#FF5DA2",
-      route: "/challenges/bonus",
-    },
-    {
-      label: "Admin\nDashboard",
-      icon: "🛠️",
-      color: Colors.cards.admin,
-      route: "/admin",
-    },
-    { label: "Settings", icon: "⚙️", color: Colors.cards.settings },
-  ];
+  // --- Hub sizing
+  const hubSize = Math.min(320, screenWidth - Spacing.screenPadding * 2);
+
+  // bubbles
+  const bubbleSize = Math.max(70, Math.min(88, hubSize * 0.26));
+  const bubbleRadius = bubbleSize / 2;
+
+  // TRUE circle layout: 5 evenly spaced points, starting at 12 o’clock
+  const hubSlots = useMemo(() => {
+    const ringRadius = Math.round(hubSize * 0.38);
+    const step = (2 * Math.PI) / 5;
+    const start = -Math.PI / 2;
+
+    return Array.from({ length: 5 }).map((_, i) => {
+      const angle = start + i * step;
+      return {
+        dx: Math.round(Math.cos(angle) * ringRadius),
+        dy: Math.round(Math.sin(angle) * ringRadius),
+      };
+    });
+  }, [hubSize]);
+
+  const positionedHub = useMemo(() => {
+    return wheelCards.map((card, i) => {
+      const s = hubSlots[i];
+      return { card, dx: s.dx, dy: s.dy };
+    });
+  }, [wheelCards, hubSlots]);
 
   return (
     <View style={styles.container}>
+      {/* Game-like wallpaper background (design only) */}
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <LinearGradient
+          colors={[
+            "rgba(14,42,102,0.45)",
+            "rgba(109,168,255,0.10)",
+            "rgba(255,93,162,0.06)",
+            "rgba(0,0,0,0)",
+          ]}
+          start={{ x: 0.1, y: 0.0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <LinearGradient
+          colors={["rgba(139,92,246,0.12)", "rgba(0,0,0,0)"]}
+          start={{ x: 0, y: 1 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <View style={[styles.bgOrb, styles.bgOrb1]} />
+        <View style={[styles.bgOrb, styles.bgOrb2]} />
+        <View style={[styles.bgOrb, styles.bgOrb3]} />
+
+        {/* sparkles */}
+        <Animated.View
+          style={[styles.spark, styles.spark1, { opacity: twinkleOpacity }]}
+        />
+        <Animated.View
+          style={[styles.spark, styles.spark2, { opacity: twinkleOpacity }]}
+        />
+        <Animated.View
+          style={[styles.spark, styles.spark3, { opacity: twinkleOpacity }]}
+        />
+        <Animated.View
+          style={[styles.spark, styles.spark4, { opacity: twinkleOpacity }]}
+        />
+        <Animated.View
+          style={[styles.spark, styles.spark5, { opacity: twinkleOpacity }]}
+        />
+      </View>
+
       <View style={styles.headerWrapper}>
-        <AppHeader />
+        <AppHeader
+          greeting={`Hi${firstName ? `, ${firstName}` : ""}`}
+          subtitle={dailyQuote}
+        />
+      </View>
 
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Ionicons name="log-out-outline" size={26} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Logout</Text>
+      {/* Featured (hub-only rotation) */}
+      <Animated.View
+        style={[styles.featuredWrap, { transform: [{ scale: pulseScale }] }]}
+      >
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() =>
+            featuredWheelCard.route && router.push(featuredWheelCard.route)
+          }
+          style={[
+            styles.featuredCard,
+            { backgroundColor: featuredWheelCard.color },
+          ]}
+        >
+          <LinearGradient
+            colors={[
+              "rgba(255,255,255,0.26)",
+              "rgba(255,255,255,0.05)",
+              "rgba(255,255,255,0.02)",
+            ]}
+            start={{ x: 1, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.featuredOverlay}
+          />
+
+          <View style={styles.featuredLeft}>
+            <Text style={styles.featuredKicker} numberOfLines={1}>
+              Featured
+            </Text>
+            <Text style={styles.featuredTitle} numberOfLines={1}>
+              {featuredWheelCard.label}
+            </Text>
+          </View>
+
+          <View style={styles.featuredRight}>
+            <View style={styles.featuredIconBubble}>
+              <Text style={styles.featuredIcon}>{featuredWheelCard.icon}</Text>
+            </View>
+
+            {featuredWheelCard.key === "bonus" && renderBadge("bonus")}
+            {featuredWheelCard.key !== "bonus" && (
+              <Text style={styles.featuredTap}>Tap</Text>
+            )}
+          </View>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
 
-      <View style={styles.headerText}>
-        <Text style={styles.greeting}>
-          Hi{firstName ? `, ${firstName}` : ""}
-        </Text>
-        <Text style={styles.quote}>{dailyQuote}</Text>
-      </View>
+      {/* Hub */}
+      <View style={[styles.hubWrap, { height: hubSize }]}>
+        <View style={[styles.hubStage, { width: hubSize, height: hubSize }]}>
+          {/* center logo */}
+          <Animated.View
+            style={[
+              styles.hubCore,
+              { transform: [{ translateY: logoFloatY }, { translateY: 16 }] },
+            ]}
+          >
+            <Image
+              source={require("../assets/images/FTG1.png")}
+              style={styles.hubLogo}
+              resizeMode="contain"
+            />
+          </Animated.View>
 
-      <View style={styles.cardGrid}>
-        {cards.map((card, index) => {
-          const isMessages = card.label === "Messages";
-          const isBonus = card.label === "Bonus\nPoints";
+          {/* bubbles around logo */}
+          {positionedHub.map(({ card, dx, dy }) => {
+            const isFeatured = card.key === featuredWheelCard.key;
+            const center = hubSize / 2;
 
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => card.route && router.push(card.route)}
-              style={[
-                styles.card,
-                {
-                  width: cardWidth,
-                  height: cardHeight,
-                  backgroundColor: card.color,
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
-                start={{ x: 1, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.cornerBubble}
+            // true center positioning
+            const left = center + dx - bubbleRadius;
+            const top = center + dy - bubbleRadius;
+
+            return (
+              <TouchableOpacity
+                key={card.key}
+                activeOpacity={0.9}
+                onPress={() => card.route && router.push(card.route)}
+                style={[styles.hubItem, { left, top }]}
               >
-                <Text style={styles.bubbleIcon}>{card.icon}</Text>
-              </LinearGradient>
-
-              {isMessages && unreadCount > 0 && <View style={styles.badgeDot} />}
-
-              {isBonus && bonusCount > 0 && (
-                <View style={styles.countBadge}>
-                  <Text style={styles.countBadgeText}>
-                    {bonusCount > 99 ? "99+" : String(bonusCount)}
-                  </Text>
+                <View
+                  style={[
+                    styles.hubBubble,
+                    {
+                      width: bubbleSize,
+                      height: bubbleSize,
+                      borderRadius: bubbleRadius,
+                      backgroundColor: card.color,
+                      opacity: isFeatured ? 1 : 0.94,
+                      transform: [{ scale: isFeatured ? 1.08 : 1 }],
+                    },
+                  ]}
+                >
+                  <LinearGradient
+                    colors={[
+                      "rgba(255,255,255,0.34)",
+                      "rgba(255,255,255,0.08)",
+                      "rgba(255,255,255,0.03)",
+                    ]}
+                    start={{ x: 1, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.hubBubbleOverlay}
+                  />
+                  <View style={styles.hubBubbleHighlight} />
+                  <Text style={styles.hubEmoji}>{card.icon}</Text>
+                  {renderBadge(card.key)}
                 </View>
-              )}
 
-              <Text style={styles.cardTitle}>{card.label}</Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[styles.hubLabel, isFeatured && styles.hubLabelFeatured]}
+                  numberOfLines={1}
+                >
+                  {card.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
-      <View style={styles.streakBox}>
-        <Text style={styles.streakPrimary}>🔥 {loginStreak}-Day Streak</Text>
-        <Text style={styles.streakSecondary}>
-          Points awarded for 5 consecutive days of login
-        </Text>
+      {/* Bottom mini area */}
+      <View style={styles.bottomArea}>
+        <View style={styles.miniRow}>
+          {bottomCards.map((card) => (
+            <TouchableOpacity
+              key={card.key}
+              activeOpacity={0.9}
+              onPress={() => card.route && router.push(card.route)}
+              style={[styles.miniCard, { backgroundColor: card.color }]}
+            >
+              <Text style={styles.miniIcon}>{card.icon}</Text>
+              {renderBadge(card.key)}
+              <Text style={styles.miniTitle}>{card.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={styles.miniRow2}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push("/admin" as Href)}
+            style={[
+              styles.miniCardWide,
+              { backgroundColor: Colors.cards.admin },
+            ]}
+          >
+            <Text style={styles.miniIcon}>🛠️</Text>
+            <Text style={styles.miniTitle}>Admin</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => router.push("/settings" as Href)}
+            style={[
+              styles.miniCardWide,
+              { backgroundColor: Colors.cards.settings },
+            ]}
+          >
+            <Text style={styles.miniIcon}>⚙️</Text>
+            <Text style={styles.miniTitle}>Settings</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.streakInline}>
+          <Text style={styles.streakPrimary}>🔥 {loginStreak}-Day Streak</Text>
+          <Text style={styles.streakSecondary}>
+            Points awarded for 5 consecutive days of login
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -347,84 +703,206 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
+    paddingBottom: 6,
   },
+
+  // background accents
+  bgOrb: {
+    position: "absolute",
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  bgOrb1: {
+    width: 230,
+    height: 230,
+    top: -80,
+    left: -80,
+    backgroundColor: "rgba(109,168,255,0.10)",
+  },
+  bgOrb2: {
+    width: 200,
+    height: 200,
+    top: 150,
+    right: -70,
+    backgroundColor: "rgba(255,93,162,0.07)",
+  },
+  bgOrb3: {
+    width: 280,
+    height: 280,
+    bottom: -140,
+    left: 10,
+    backgroundColor: "rgba(139,92,246,0.06)",
+  },
+
+  spark: {
+    position: "absolute",
+    width: 3,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: "rgba(255,255,255,0.90)",
+  },
+  spark1: { top: 110, left: 40 },
+  spark2: { top: 210, right: 34 },
+  spark3: { top: 320, left: 24 },
+  spark4: { bottom: 210, right: 64 },
+  spark5: { bottom: 160, left: 80 },
+
   headerWrapper: {
     position: "relative",
-    marginBottom: Spacing.sectionGap,
+    marginBottom: Spacing.sectionGap - 6,
   },
-  logoutButton: {
-    position: "absolute",
-    left: 16,
-    top: "50%",
-    transform: [{ translateY: -18 }],
-    alignItems: "center",
+
+  // ✅ Featured moved up ~1/8" more
+  featuredWrap: {
+    marginBottom: 12,
+    marginTop: -24, // was -12
   },
-  logoutText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 2,
-  },
-  headerText: {
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  greeting: {
-    fontSize: Typography.greeting.fontSize,
-    fontWeight: Typography.greeting.fontWeight,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-    textAlign: "center",
-  },
-  quote: {
-    fontSize: Typography.quote.fontSize,
-    color: Colors.textSecondary,
-    textAlign: "center",
-  },
-  cardGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    columnGap: Spacing.gridGap,
-    rowGap: Spacing.gridGap,
-  },
-  card: {
+  featuredCard: {
+    height: 88,
     borderRadius: Radius.card,
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    paddingBottom: 14,
-    paddingLeft: 14,
     overflow: "hidden",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
-  cornerBubble: {
-    position: "absolute",
-    top: -24,
-    right: -24,
-    width: 96,
-    height: 96,
-    borderRadius: 28,
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    padding: 18,
+  featuredOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
-  bubbleIcon: {
+  featuredLeft: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  featuredKicker: {
+    color: "rgba(255,255,255,0.90)",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    marginBottom: 5,
+    textTransform: "uppercase",
+  },
+  featuredTitle: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 20,
+  },
+  featuredRight: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  featuredIconBubble: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,0,0,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  featuredIcon: {
     fontSize: 24,
+  },
+  featuredTap: {
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  hubWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  hubStage: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  // ✅ Center core + logo reduced ~20% (116→93, 80→64)
+  hubCore: {
+    position: "absolute",
+    width: 93,
+    height: 93,
+    borderRadius: 999,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  hubLogo: {
+    width: 64,
+    height: 64,
+    opacity: 0.98,
+  },
+
+  hubItem: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  hubBubble: {
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.16)",
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 10 },
+  },
+  hubBubbleOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  hubBubbleHighlight: {
+    position: "absolute",
+    top: 8,
+    left: 10,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "rgba(255,255,255,0.22)",
+  },
+  hubEmoji: {
+    fontSize: 30,
+  },
+  hubLabel: {
+    marginTop: 8,
+    maxWidth: 124,
+    color: "rgba(255,255,255,0.92)",
+    fontSize: 12,
+    fontWeight: "900",
+    textAlign: "center",
+    lineHeight: 14,
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  hubLabelFeatured: {
+    color: "#FFFFFF",
   },
 
   badgeDot: {
     position: "absolute",
-    top: 10,
-    right: 12,
+    top: 8,
+    right: 10,
     width: 10,
     height: 10,
     borderRadius: 5,
     backgroundColor: "#FF4D4F",
   },
-
   countBadge: {
     position: "absolute",
-    bottom: 10,
-    right: 10,
+    bottom: 8,
+    right: 8,
     minWidth: 22,
     height: 22,
     paddingHorizontal: 6,
@@ -433,7 +911,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   countBadgeText: {
     color: "#FFFFFF",
     fontSize: 12,
@@ -441,33 +918,72 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  cardTitle: {
-    fontSize: Typography.cardTitle.fontSize,
-    fontWeight: Typography.cardTitle.fontWeight,
-    lineHeight: Typography.cardTitle.lineHeight,
-    color: Colors.textPrimary,
-    textAlign: "left",
+  bottomArea: {
+    paddingBottom: 2,
+    marginTop: 36,
   },
-  streakBox: {
-    position: "absolute",
-    bottom: 16,
-    left: Spacing.screenPadding,
-    right: Spacing.screenPadding,
+  miniRow: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  miniRow2: {
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  miniCard: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    overflow: "hidden",
+    minHeight: 66,
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+  },
+  miniCardWide: {
+    flex: 1,
+    borderRadius: 18,
+    paddingVertical: 11,
+    paddingHorizontal: 12,
+    overflow: "hidden",
+    minHeight: 60,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+  },
+  miniIcon: {
+    fontSize: 18,
+  },
+  miniTitle: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "900",
+    lineHeight: 15,
+  },
+
+  streakInline: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
     alignItems: "center",
   },
   streakPrimary: {
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "800",
     color: Colors.textPrimary,
     marginBottom: 2,
   },
   streakSecondary: {
-    fontSize: 13,
-    color: Colors.textSecondary,
+    fontSize: 12,
+    color: "rgba(255,255,255,0.78)",
     textAlign: "center",
   },
 });

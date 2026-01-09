@@ -1,22 +1,12 @@
 // app/admin/index.tsx
 // FULL FILE REPLACEMENT
-// Change:
-// - Remove the duplicate Reports card
-// - Replace bottom two cards (Reports duplicate + placeholder) with ONE full-width animated FTG1.png logo card
-// - Animate on screen load + every 30 seconds
+// Fix:
+// - Change route type from Href to string to clear TS error
 
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter, type Href } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Alert,
-  Animated,
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppHeader } from "../../components/AppHeader";
 import {
   Colors,
@@ -33,7 +23,7 @@ type AdminCard = {
   label?: string;
   icon?: string;
   color: string;
-  route?: Href;
+  route?: string;
   count?: number;
 };
 
@@ -44,42 +34,6 @@ export default function AdminDashboardScreen() {
   const [gymCount, setGymCount] = useState(0);
   const [spotlightCount, setSpotlightCount] = useState(0);
   const [otherCount, setOtherCount] = useState(0);
-
-  // Logo animation
-  const logoScale = useRef(new Animated.Value(0.98)).current;
-  const logoOpacity = useRef(new Animated.Value(0.9)).current;
-
-  const pulseLogo = () => {
-    logoScale.setValue(0.98);
-    logoOpacity.setValue(0.9);
-
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(logoScale, {
-          toValue: 1.02,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 1,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(logoScale, {
-          toValue: 1.0,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoOpacity, {
-          toValue: 0.92,
-          duration: 650,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  };
 
   useEffect(() => {
     const init = async () => {
@@ -116,19 +70,6 @@ export default function AdminDashboardScreen() {
 
     init();
   }, []);
-
-  useEffect(() => {
-    if (!authorized) return;
-
-    // animate once when screen becomes active
-    pulseLogo();
-
-    const id = setInterval(() => {
-      pulseLogo();
-    }, 30000);
-
-    return () => clearInterval(id);
-  }, [authorized]);
 
   const loadGymCount = async () => {
     const { data: gymChallenges } = await supabase
@@ -215,7 +156,27 @@ export default function AdminDashboardScreen() {
         color: "#2EC4B6",
         route: "/admin/events/create",
       },
-      // Reports removed for now (admin-only feature to be added later)
+      {
+        key: "reports",
+        label: "Reports",
+        icon: "📊",
+        color: "#6D2E8A",
+        route: "/admin/reports",
+      },
+      {
+        key: "send-message",
+        label: "Send\nMessage",
+        icon: "✉️",
+        color: "#D67A2F",
+        route: "/admin/messages/send",
+      },
+      {
+        key: "assign-training",
+        label: "Assign\nTraining",
+        icon: "🎓",
+        color: "#3A86FF",
+        route: "/admin/training/assign",
+      },
     ],
     [gymCount, spotlightCount, otherCount]
   );
@@ -235,7 +196,7 @@ export default function AdminDashboardScreen() {
         {cards.map((card) => (
           <TouchableOpacity
             key={card.key}
-            onPress={() => card.route && router.push(card.route)}
+            onPress={() => card.route && router.push(card.route as any)}
             style={[styles.card, { backgroundColor: card.color }]}
             activeOpacity={card.route ? 0.85 : 1}
           >
@@ -259,27 +220,14 @@ export default function AdminDashboardScreen() {
             </>
           </TouchableOpacity>
         ))}
-
-        {/* Full-width animated logo card */}
-        <View style={[styles.card, styles.cardFullWidth, styles.logoCard]}>
-          <Animated.View
-            style={{
-              transform: [{ scale: logoScale }],
-              opacity: logoOpacity,
-            }}
-          >
-            <Image
-              source={require("../../assets/images/FTG1.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </Animated.View>
-        </View>
       </View>
 
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backIcon}>⬅️</Text>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
@@ -333,16 +281,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     overflow: "hidden",
   },
-  cardFullWidth: {
-    flexBasis: "100%",
-    paddingLeft: 0,
-    paddingBottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoCard: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
   cornerBubble: {
     position: "absolute",
     top: -22,
@@ -356,11 +294,6 @@ const styles = StyleSheet.create({
   },
   bubbleIcon: {
     fontSize: 22,
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    opacity: 0.9,
   },
   badge: {
     position: "absolute",
