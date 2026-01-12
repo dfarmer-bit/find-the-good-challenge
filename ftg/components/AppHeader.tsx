@@ -11,10 +11,9 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { Colors, Layout, Radius, Typography } from "../constants/theme";
+import { Colors, Radius, Typography } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
-// Expo + TS safe asset reference
 const FTGLogo = require("../assets/images/FTG1.png");
 
 type AppHeaderProps = {
@@ -71,14 +70,14 @@ export function AppHeader({ greeting, subtitle }: AppHeaderProps) {
         <Image source={FTGLogo} style={styles.logo} resizeMode="contain" />
       </View>
 
-      {/* Center: Greeting + Quote (optional) */}
+      {/* Center: Greeting + Subtitle */}
       <View style={styles.centerSlot}>
         {showCenterText ? (
           <>
             <Text style={styles.greeting} numberOfLines={1}>
               {greeting ?? ""}
             </Text>
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={styles.subtitle}>
               {subtitle ?? ""}
             </Text>
           </>
@@ -101,46 +100,45 @@ export function AppHeader({ greeting, subtitle }: AppHeaderProps) {
   );
 }
 
+const LOGO_W = 80;
+const RIGHT_W = 84;
+
 const styles = StyleSheet.create<Styles>({
   container: {
     backgroundColor: Colors.accentPrimary,
     borderRadius: Radius.container,
-    paddingHorizontal: 14, // tighter so logo can sit further left
-    paddingVertical: 14, // keep height stable
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 24,
   },
 
-  // Make logo truly left-aligned, no extra padding
   leftSlot: {
-    width: 56, // narrower so center has room (prevents overlap)
+    width: LOGO_W,
     alignItems: "flex-start",
     justifyContent: "center",
   },
 
-  // Center gets the real remaining space
   centerSlot: {
     flex: 1,
-    minWidth: 0, // critical: allows text to shrink/ellipsize instead of overlapping
+    minWidth: 0,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
   },
 
   rightSlot: {
-    width: 72,
+    width: RIGHT_W,
     alignItems: "flex-end",
     justifyContent: "center",
   },
 
-  // Smaller logo footprint + pushed visually left by container padding
   logo: {
-    width: 80,
+    width: LOGO_W,
     height: 80,
   },
 
-  // Bigger "Hi Dennis"
   greeting: {
     color: Colors.textPrimary,
     fontSize: 18.5,
@@ -150,14 +148,16 @@ const styles = StyleSheet.create<Styles>({
     textAlign: "center",
   },
 
+  // ✅ subtitle now wraps automatically
   subtitle: {
     color: Colors.textSecondary,
     fontSize: 11.5,
     fontWeight: "700",
-    lineHeight: 13,
+    lineHeight: 14,
     includeFontPadding: false,
     marginTop: 2,
     textAlign: "center",
+    maxWidth: "100%",
   },
 
   pointsNumber: {

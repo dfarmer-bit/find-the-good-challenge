@@ -1,92 +1,79 @@
+// app/settings.tsx
+// FULL FILE REPLACEMENT
+// DESIGN-ONLY
+// Update:
+// - Wire all Settings cards to their routes
+
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
-import {
-  Dimensions,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { AppHeader } from "../../../components/AppHeader";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { AppHeader } from "../components/AppHeader";
 import {
   Colors,
+  Components,
   Layout,
   Radius,
   Spacing,
   Typography,
-  Components,
-} from "../../../constants/theme";
+} from "../constants/theme";
 
-type ReportCard = {
-  label: string;
+type SettingsCard = {
+  key: string;
+  title: string;
+  subtitle: string;
   icon: string;
   color: string;
   route: string;
 };
 
-export default function AdminReportsIndex() {
+export default function SettingsScreen() {
   const router = useRouter();
-  const screenWidth = Dimensions.get("window").width;
 
-  const baseSize =
-    (screenWidth - Spacing.screenPadding * 2 - Spacing.gridGap) / 2;
-
-  const cardWidth = baseSize * Layout.cardScale;
-  const cardHeight = cardWidth * 0.9;
-
-  const cards: ReportCard[] = [
+  const cards: SettingsCard[] = [
     {
-      label: "User\nEngagement",
-      icon: "👤",
-      color: Colors.cards.complete,
-      route: "/admin/reports/user-engagement",
+      key: "notifications",
+      title: "Notifications",
+      subtitle: "Reminders, challenges, messages",
+      icon: "🔔",
+      color: "#3A86FF",
+      route: "/settings/notifications",
     },
     {
-      label: "Challenge\nParticipation",
-      icon: "🏁",
-      color: Colors.cards.goals,
-      route: "/admin/reports/challenge-participation",
+      key: "location",
+      title: "Location Access",
+      subtitle: "Required for walking challenges",
+      icon: "📍",
+      color: "#2EC4B6",
+      route: "/settings/location-access",
     },
     {
-      label: "Event\nAttendance",
-      icon: "📅",
-      color: Colors.cards.messages,
-      route: "/admin/reports/event-attendance",
-    },
-    {
-      label: "Leaderboard",
-      icon: "🏆",
-      color: Colors.cards.admin,
-      route: "/admin/reports/leaderboard",
+      key: "walking",
+      title: "Walking Setup",
+      subtitle: "Steps, device, and permissions",
+      icon: "🚶",
+      color: "#FF5DA2",
+      route: "/settings/walking-setup",
     },
   ];
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <AppHeader />
-      </View>
+      <AppHeader />
 
       <View style={styles.headerText}>
-        <Text style={styles.title}>Reports</Text>
-        <Text style={styles.subtitle}>Admin reporting & exports</Text>
+        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>
+          Manage permissions and app features
+        </Text>
       </View>
 
-      <View style={styles.cardGrid}>
-        {cards.map((card, idx) => (
+      <View style={styles.cardColumn}>
+        {cards.map((card) => (
           <TouchableOpacity
-            key={idx}
-            onPress={() => router.push(card.route as any)}
-            style={[
-              styles.card,
-              {
-                width: cardWidth,
-                height: cardHeight,
-                backgroundColor: card.color,
-              },
-            ]}
+            key={card.key}
             activeOpacity={0.9}
+            onPress={() => router.push(card.route as any)}
+            style={[styles.card, { backgroundColor: card.color }]}
           >
             <LinearGradient
               colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
@@ -97,7 +84,8 @@ export default function AdminReportsIndex() {
               <Text style={styles.bubbleIcon}>{card.icon}</Text>
             </LinearGradient>
 
-            <Text style={styles.cardTitle}>{card.label}</Text>
+            <Text style={styles.cardTitle}>{card.title}</Text>
+            <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -132,12 +120,10 @@ const styles = StyleSheet.create({
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
   },
-  headerWrapper: {
-    marginBottom: Spacing.sectionGap,
-  },
+
   headerText: {
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 16,
   },
   title: {
     fontSize: Typography.greeting.fontSize,
@@ -148,18 +134,16 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Typography.quote.fontSize,
     color: Colors.textSecondary,
+    textAlign: "center",
   },
-  cardGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: Spacing.gridGap,
+
+  cardColumn: {
+    gap: 14,
   },
   card: {
-    flexBasis: "48%",
+    height: 110,
     borderRadius: Radius.card,
-    paddingBottom: 12,
-    paddingLeft: 12,
+    padding: 16,
     justifyContent: "flex-end",
     overflow: "hidden",
   },
@@ -175,14 +159,20 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   bubbleIcon: {
-    fontSize: 22,
+    fontSize: 24,
   },
   cardTitle: {
     fontSize: Typography.cardTitle.fontSize,
     fontWeight: Typography.cardTitle.fontWeight,
     lineHeight: Typography.cardTitle.lineHeight,
     color: Colors.textPrimary,
+    marginBottom: 4,
   },
+  cardSubtitle: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+  },
+
   bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,

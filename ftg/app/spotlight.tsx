@@ -1,29 +1,24 @@
 // app/spotlight.tsx
+// FULL FILE REPLACEMENT
 
 import { AppHeader } from "@/components/AppHeader";
-import {
-    Colors,
-    Components,
-    Layout,
-    Radius,
-    Spacing,
-} from "@/constants/theme";
+import { Colors, Components, Layout, Radius, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "expo-router";
+import { Href, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Profile = {
@@ -41,8 +36,9 @@ export default function SpotlightScreen() {
   const [results, setResults] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
-  const [behaviorType, setBehaviorType] =
-    useState<"one_time" | "ongoing" | null>(null);
+  const [behaviorType, setBehaviorType] = useState<"one_time" | "ongoing" | null>(
+    null
+  );
   const [behaviorOpen, setBehaviorOpen] = useState(false);
 
   const [reason, setReason] = useState("");
@@ -70,8 +66,7 @@ export default function SpotlightScreen() {
     runSearch();
   }, [search]);
 
-  const showEmployeeDropdown =
-    !selectedProfile && search.trim().length >= 2;
+  const showEmployeeDropdown = !selectedProfile && search.trim().length >= 2;
 
   const canSubmit =
     !!selectedProfile &&
@@ -82,15 +77,12 @@ export default function SpotlightScreen() {
   const submitNomination = async () => {
     if (!canSubmit || !selectedProfile || !behaviorType) return;
 
-    const { data, error } = await supabase.rpc(
-      "submit_spotlight_nomination",
-      {
-        p_nominee_id: selectedProfile.id,
-        p_behavior_type: behaviorType,
-        p_reason: reason.trim(),
-        p_details: details.trim(),
-      }
-    );
+    const { data, error } = await supabase.rpc("submit_spotlight_nomination", {
+      p_nominee_id: selectedProfile.id,
+      p_behavior_type: behaviorType,
+      p_reason: reason.trim(),
+      p_details: details.trim(),
+    });
 
     if (error) {
       Alert.alert("Something went wrong", "Please try again.");
@@ -99,17 +91,12 @@ export default function SpotlightScreen() {
 
     if (data?.status === "blocked") {
       const messages: Record<string, string> = {
-        self_nomination:
-          "You can’t nominate yourself — but we love the confidence 🙂",
+        self_nomination: "You can’t nominate yourself — but we love the confidence 🙂",
         monthly_duplicate:
           "You’ve already nominated this person this month. You can nominate them again next month.",
       };
 
-      Alert.alert(
-        "Not quite",
-        messages[data.code] ??
-          "This nomination can’t be submitted right now."
-      );
+      Alert.alert("Not quite", messages[data.code] ?? "This nomination can’t be submitted right now.");
       return;
     }
 
@@ -140,10 +127,7 @@ export default function SpotlightScreen() {
         setBehaviorOpen(false);
       }}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView
           style={{ backgroundColor: Colors.background }}
           contentContainerStyle={styles.scrollContent}
@@ -155,7 +139,9 @@ export default function SpotlightScreen() {
             <View style={styles.headerText}>
               <Text style={styles.title}>🌟 Spotlight</Text>
               <Text style={styles.subtitle}>
-                Recognize someone who’s making a real difference
+                Recognize someone who’s making a real difference. You may nominate 2 unique individuals per week, worth
+                50 points per nomination. Each month nominations reset and you may nominate a previously submitted
+                person.
               </Text>
             </View>
 
@@ -176,9 +162,7 @@ export default function SpotlightScreen() {
               {showEmployeeDropdown && (
                 <View style={styles.dropdown}>
                   {results.length === 0 ? (
-                    <Text style={styles.noResult}>
-                      No matching employee found
-                    </Text>
+                    <Text style={styles.noResult}>No matching employee found</Text>
                   ) : (
                     <View>
                       {results.map((item) => (
@@ -191,12 +175,8 @@ export default function SpotlightScreen() {
                             Keyboard.dismiss();
                           }}
                         >
-                          <Text style={styles.profileName}>
-                            {item.full_name}
-                          </Text>
-                          <Text style={styles.profileDept}>
-                            {item.department}
-                          </Text>
+                          <Text style={styles.profileName}>{item.full_name}</Text>
+                          <Text style={styles.profileDept}>{item.department}</Text>
                         </TouchableOpacity>
                       ))}
                     </View>
@@ -209,12 +189,8 @@ export default function SpotlightScreen() {
 
             {selectedProfile && (
               <View style={styles.selectedBox}>
-                <Text style={styles.selectedName}>
-                  {selectedProfile.full_name}
-                </Text>
-                <Text style={styles.selectedDept}>
-                  {selectedProfile.department}
-                </Text>
+                <Text style={styles.selectedName}>{selectedProfile.full_name}</Text>
+                <Text style={styles.selectedDept}>{selectedProfile.department}</Text>
               </View>
             )}
 
@@ -227,12 +203,7 @@ export default function SpotlightScreen() {
                   setBehaviorOpen((v) => !v);
                 }}
               >
-                <Text
-                  style={[
-                    styles.behaviorSelectText,
-                    !behaviorType && styles.behaviorPlaceholder,
-                  ]}
-                >
+                <Text style={[styles.behaviorSelectText, !behaviorType && styles.behaviorPlaceholder]}>
                   {behaviorLabel}
                 </Text>
                 <Text style={styles.behaviorChevron}>▾</Text>
@@ -247,9 +218,7 @@ export default function SpotlightScreen() {
                       setBehaviorOpen(false);
                     }}
                   >
-                    <Text style={styles.behaviorItemText}>
-                      One-time action
-                    </Text>
+                    <Text style={styles.behaviorItemText}>One-time action</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -259,9 +228,7 @@ export default function SpotlightScreen() {
                       setBehaviorOpen(false);
                     }}
                   >
-                    <Text style={styles.behaviorItemText}>
-                      Ongoing behavior
-                    </Text>
+                    <Text style={styles.behaviorItemText}>Ongoing behavior</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -290,16 +257,11 @@ export default function SpotlightScreen() {
 
             {/* SUBMIT */}
             <TouchableOpacity
-              style={[
-                styles.submitButton,
-                !canSubmit && styles.submitDisabled,
-              ]}
+              style={[styles.submitButton, !canSubmit && styles.submitDisabled]}
               disabled={!canSubmit}
               onPress={submitNomination}
             >
-              <Text style={styles.submitText}>
-                Submit Nomination
-              </Text>
+              <Text style={styles.submitText}>Submit Nomination</Text>
             </TouchableOpacity>
 
             <View style={{ height: 120 }} />
@@ -308,10 +270,7 @@ export default function SpotlightScreen() {
 
         {/* BACK */}
         <View style={styles.bottomBar}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backIcon}>⬅️</Text>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
@@ -321,16 +280,9 @@ export default function SpotlightScreen() {
         <Modal visible={showSuccess} transparent>
           <View style={styles.modalOverlay}>
             <View style={styles.modalBox}>
-              <Text style={styles.modalText}>
-                🎉 Spotlight nomination submitted!
-              </Text>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={() => router.replace("/main")}
-              >
-                <Text style={styles.modalButtonText}>
-                  Back to Home
-                </Text>
+              <Text style={styles.modalText}>🎉 Spotlight nomination submitted!</Text>
+              <TouchableOpacity style={styles.modalButton} onPress={() => router.replace("/main" as Href)}>
+                <Text style={styles.modalButtonText}>Back to Home</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -347,9 +299,24 @@ const styles = StyleSheet.create({
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
   },
-  headerText: { marginTop: 18, marginBottom: 14 },
-  title: { fontSize: 22, fontWeight: "700", color: Colors.textPrimary },
-  subtitle: { color: Colors.textSecondary },
+
+  // ✅ centered header block + centered text
+  headerText: {
+    marginTop: 18,
+    marginBottom: 14,
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginTop: 6,
+  },
 
   searchWrap: { position: "relative", zIndex: 20 },
   input: {
@@ -379,8 +346,11 @@ const styles = StyleSheet.create({
   selectedDept: { color: Colors.textSecondary },
 
   behaviorWrap: { marginBottom: 10 },
+
+  // ✅ dropdown "closed" state matches the question fields (same as textArea)
   behaviorSelect: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: Colors.cards.goals,
+    color: Colors.textPrimary,
     borderRadius: Radius.card,
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -392,10 +362,12 @@ const styles = StyleSheet.create({
   behaviorPlaceholder: { color: Colors.textSecondary },
   behaviorChevron: { color: Colors.textSecondary },
 
+  // ✅ dropdown menu matches the question fields too
   behaviorMenu: {
     marginTop: 8,
-    backgroundColor: "rgba(255,255,255,0.10)",
+    backgroundColor: Colors.cards.goals,
     borderRadius: Radius.card,
+    overflow: "hidden",
   },
   behaviorItem: { padding: 12 },
   behaviorItemText: { color: Colors.textPrimary, fontWeight: "700" },

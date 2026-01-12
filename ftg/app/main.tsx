@@ -1,13 +1,10 @@
 // app/main.tsx
 // FULL FILE REPLACEMENT
-// DESIGN-ONLY updates requested:
-// - Featured card moved up ~1/8" more (marginTop -12 → -24)
-// - Center logo/core reduced by ~20% (hubCore 116→93, hubLogo 80→64)
-// - NO logic/data changes
-//
-// UPDATE (Survey badge + link only):
-// - Adds a red dot badge on the Survey card when a survey is open AND not yet submitted
-// - Survey card already routes to /survey; no other routing/layout changes
+// Design-only changes:
+// - Featured card slightly shorter
+// - Hub (circle + center logo) moved down ~1/8"
+// - Keep 3 mini cards where they are, but add spacing below them and below Admin/Settings,
+//   while maintaining safe bottom space
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
@@ -25,6 +22,7 @@ import {
 import { AppHeader } from "../components/AppHeader";
 import { Colors, Layout, Radius, Spacing } from "../constants/theme";
 import { supabase } from "../lib/supabase";
+import { registerForPushNotifications } from "../lib/registerNotifications";
 
 type CardItem = {
   key: string;
@@ -47,7 +45,7 @@ const DAILY_QUOTES = [
   "Forward is forward.",
   "You’re closer than you think.",
   "One choice can change today.",
-  "Keep it simple. Keep going.",
+  "Keep it simple. \nKeep going.",
   "Discipline builds freedom.",
   "Trust the process.",
   "Action creates motivation.",
@@ -59,7 +57,7 @@ const DAILY_QUOTES = [
   "Your future thanks you.",
   "Do the next right thing.",
   "Energy follows action.",
-  "Small effort. Big impact.",
+  "Small effort. \nBig impact.",
   "You’re on track.",
   "Stay steady.",
   "Build, don’t rush.",
@@ -154,12 +152,21 @@ export default function HomeScreen() {
     return () => anim.stop();
   }, [logoFloat]);
 
+  // ✅ ensure we only register once per app session
+  const didRegisterPush = useRef(false);
+
   const loadData = useCallback(async () => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) return;
+
+    // ✅ One-time push registration/token save
+    if (!didRegisterPush.current) {
+      didRegisterPush.current = true;
+      registerForPushNotifications();
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -703,7 +710,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: 6,
+    paddingBottom: 12, // a touch more safe-space
   },
 
   // background accents
@@ -752,16 +759,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sectionGap - 6,
   },
 
-  // ✅ Featured moved up ~1/8" more
+  // Featured: slightly shorter + keep its current placement
   featuredWrap: {
     marginBottom: 12,
-    marginTop: -24, // was -12
+    marginTop: -24,
   },
   featuredCard: {
-    height: 88,
+    height: 82, // was 88 (slightly smaller)
     borderRadius: Radius.card,
     overflow: "hidden",
-    paddingVertical: 12,
+    paddingVertical: 10, // was 12
     paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -779,7 +786,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 0.6,
-    marginBottom: 5,
+    marginBottom: 4, // was 5
     textTransform: "uppercase",
   },
   featuredTitle: {
@@ -794,8 +801,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   featuredIconBubble: {
-    width: 48,
-    height: 48,
+    width: 46, // slightly tighter to match reduced height
+    height: 46,
     borderRadius: 16,
     backgroundColor: "rgba(0,0,0,0.18)",
     alignItems: "center",
@@ -810,17 +817,18 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
+  // Hub moved down ~1/8"
   hubWrap: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
+    marginTop: 12, // NEW: shifts the whole hub down
   },
   hubStage: {
     alignItems: "center",
     justifyContent: "center",
   },
 
-  // ✅ Center core + logo reduced ~20% (116→93, 80→64)
   hubCore: {
     position: "absolute",
     width: 93,
@@ -919,20 +927,20 @@ const styles = StyleSheet.create({
   },
 
   bottomArea: {
-    paddingBottom: 2,
+    paddingBottom: 6,
     marginTop: 36,
   },
   miniRow: {
     flexDirection: "row",
     gap: 10,
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 18, // was 8 (adds space below the 3 cards)
   },
   miniRow2: {
     flexDirection: "row",
     gap: 10,
     justifyContent: "space-between",
-    marginBottom: 8,
+    marginBottom: 18, // was 8 (adds space below Admin/Settings)
   },
   miniCard: {
     flex: 1,
@@ -974,6 +982,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 14,
     alignItems: "center",
+    marginBottom: 8, // ensures we don't hug the bottom
   },
   streakPrimary: {
     fontSize: 14,

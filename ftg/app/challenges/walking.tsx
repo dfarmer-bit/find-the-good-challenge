@@ -1,4 +1,5 @@
 // app/challenges/walking.tsx
+// FULL FILE REPLACEMENT
 
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -40,7 +41,7 @@ export default function WalkingScreen() {
         .from("user_device_connections")
         .select("user_id")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setDeviceConnected(true);
@@ -53,7 +54,7 @@ export default function WalkingScreen() {
   }, []);
 
   const handleConnectDevice = async () => {
-    alert("Device connection flow coming next.");
+    router.push("/settings/walking-setup");
   };
 
   if (loading) {
@@ -85,12 +86,8 @@ export default function WalkingScreen() {
         <Text style={styles.rule}>
           • Earn additional points for 10,000+ steps in a day
         </Text>
-        <Text style={styles.rule}>
-          • Daily window: 12:00 AM – 11:59 PM
-        </Text>
-        <Text style={styles.rule}>
-          • No manual check-ins are required
-        </Text>
+        <Text style={styles.rule}>• Daily window: 12:00 AM – 11:59 PM</Text>
+        <Text style={styles.rule}>• No manual check-ins are required</Text>
       </View>
 
       {/* DEVICE STATUS */}
@@ -108,27 +105,34 @@ export default function WalkingScreen() {
             <TouchableOpacity
               style={styles.connectButton}
               onPress={handleConnectDevice}
+              activeOpacity={0.9}
             >
-              <Text style={styles.connectButtonText}>
-                Connect Your Device
-              </Text>
+              <Text style={styles.connectButtonText}>Connect Your Device</Text>
             </TouchableOpacity>
-            <Text style={styles.deviceNote}>
-              Apple Health • Fitbit • Google Fit
-            </Text>
+            <Text style={styles.deviceNote}>Apple Health • Fitbit • Google Fit</Text>
           </>
         )}
       </View>
 
-      {/* Bottom Back */}
+      {/* Bottom Back/Home */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.backIcon}>⬅️</Text>
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
+        <View style={styles.bottomButtonRow}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backIcon}>⬅️</Text>
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.push("/main")}
+          >
+            <Text style={styles.backIcon}>🏠</Text>
+            <Text style={styles.backText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -230,6 +234,11 @@ const styles = StyleSheet.create({
     left: Spacing.screenPadding,
     right: Spacing.screenPadding,
     alignItems: "center",
+  },
+
+  bottomButtonRow: {
+    flexDirection: "row",
+    gap: 16,
   },
 
   backButton: {

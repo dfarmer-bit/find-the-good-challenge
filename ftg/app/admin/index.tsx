@@ -1,7 +1,7 @@
 // app/admin/index.tsx
 // FULL FILE REPLACEMENT
 // Fix:
-// - Change route type from Href to string to clear TS error
+// - Clear the last TS underline by casting route for router.push()
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
