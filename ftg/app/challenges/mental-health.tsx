@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
 
   card: {
     width: "100%",
-    height: 120,
+    height: 105,
     borderRadius: Radius.card,
     justifyContent: "center",
     overflow: "hidden",

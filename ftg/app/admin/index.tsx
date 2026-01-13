@@ -1,12 +1,18 @@
 // app/admin/index.tsx
 // FULL FILE REPLACEMENT
-// Fix:
-// - Clear the last TS underline by casting route for router.push()
+// Wire Assign Training card to: /admin/annual-training/assign-training
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { AppHeader } from "../../components/AppHeader";
 import {
   Colors,
@@ -175,7 +181,7 @@ export default function AdminDashboardScreen() {
         label: "Assign\nTraining",
         icon: "🎓",
         color: "#3A86FF",
-        route: "/admin/training/assign",
+        route: "/admin/annual-training/assign-training",
       },
     ],
     [gymCount, spotlightCount, otherCount]
@@ -185,42 +191,52 @@ export default function AdminDashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <AppHeader />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <AppHeader />
 
-      <View style={styles.headerText}>
-        <Text style={styles.title}>Admin Dashboard</Text>
-        <Text style={styles.subtitle}>Administrative tools</Text>
-      </View>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>Admin Dashboard</Text>
+          <Text style={styles.subtitle}>Administrative tools</Text>
+        </View>
 
-      <View style={styles.cardGrid}>
-        {cards.map((card) => (
-          <TouchableOpacity
-            key={card.key}
-            onPress={() => card.route && router.push(card.route as any)}
-            style={[styles.card, { backgroundColor: card.color }]}
-            activeOpacity={card.route ? 0.85 : 1}
-          >
-            <>
-              <LinearGradient
-                colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
-                start={{ x: 1, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.cornerBubble}
-              >
-                <Text style={styles.bubbleIcon}>{card.icon}</Text>
-              </LinearGradient>
+        <View style={styles.cardGrid}>
+          {cards.map((card) => (
+            <TouchableOpacity
+              key={card.key}
+              onPress={() => card.route && router.push(card.route as any)}
+              style={[styles.card, { backgroundColor: card.color }]}
+              activeOpacity={card.route ? 0.85 : 1}
+            >
+              <>
+                <LinearGradient
+                  colors={[
+                    "rgba(255,255,255,0.35)",
+                    "rgba(255,255,255,0.05)",
+                  ]}
+                  start={{ x: 1, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.cornerBubble}
+                >
+                  <Text style={styles.bubbleIcon}>{card.icon}</Text>
+                </LinearGradient>
 
-              {typeof card.count === "number" && card.count > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{card.count}</Text>
-                </View>
-              )}
+                {typeof card.count === "number" && card.count > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{card.count}</Text>
+                  </View>
+                )}
 
-              <Text style={styles.cardTitle}>{card.label}</Text>
-            </>
-          </TouchableOpacity>
-        ))}
-      </View>
+                <Text style={styles.cardTitle}>{card.label}</Text>
+              </>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
 
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
@@ -250,8 +266,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
-    paddingHorizontal: Spacing.screenPadding,
+    paddingHorizontal: Math.round(Spacing.screenPadding * 1.15),
   },
+
+  scroll: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingBottom: Layout.bottomNavSpacing + 130,
+  },
+
   headerText: {
     alignItems: "center",
     marginBottom: 12,
@@ -266,39 +291,43 @@ const styles = StyleSheet.create({
     fontSize: Typography.quote.fontSize,
     color: Colors.textSecondary,
   },
+
   cardGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: Spacing.gridGap,
   },
+
   card: {
-    flexBasis: "48%",
-    height: 126,
+    flexBasis: "47%",
+    height: 107,
     borderRadius: Radius.card,
-    paddingBottom: 12,
-    paddingLeft: 12,
+    paddingBottom: 10,
+    paddingLeft: 10,
     justifyContent: "flex-end",
     overflow: "hidden",
   },
+
   cornerBubble: {
     position: "absolute",
-    top: -22,
-    right: -22,
-    width: 90,
-    height: 90,
-    borderRadius: 26,
+    top: -19,
+    right: -19,
+    width: 77,
+    height: 77,
+    borderRadius: 22,
     justifyContent: "flex-end",
     alignItems: "flex-start",
-    padding: 16,
+    padding: 14,
   },
   bubbleIcon: {
-    fontSize: 22,
+    fontSize: 20,
   },
+
   badge: {
     position: "absolute",
-    top: 8,
-    right: 10,
+    top: 7,
+    right: 9,
     backgroundColor: "#E63946",
     borderRadius: 12,
     minWidth: 22,
@@ -312,17 +341,19 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+
   cardTitle: {
     fontSize: Typography.cardTitle.fontSize,
     fontWeight: Typography.cardTitle.fontWeight,
     lineHeight: Typography.cardTitle.lineHeight,
     color: Colors.textPrimary,
   },
+
   bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,
-    left: Spacing.screenPadding,
-    right: Spacing.screenPadding,
+    left: Math.round(Spacing.screenPadding * 1.15),
+    right: Math.round(Spacing.screenPadding * 1.15),
     alignItems: "center",
   },
   bottomButtonRow: {

@@ -1,10 +1,6 @@
 // app/main.tsx
 // FULL FILE REPLACEMENT
-// Design-only changes:
-// - Featured card slightly shorter
-// - Hub (circle + center logo) moved down ~1/8"
-// - Keep 3 mini cards where they are, but add spacing below them and below Admin/Settings,
-//   while maintaining safe bottom space
+// Add: Goals badge dot when user has any open goals (completed_at is NULL)
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
@@ -14,6 +10,7 @@ import {
   Dimensions,
   Easing,
   Image,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -73,6 +70,9 @@ export default function HomeScreen() {
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [firstName, setFirstName] = useState<string>("");
   const [bonusCount, setBonusCount] = useState<number>(0);
+
+  // ✅ Goals badge state (open goals = completed_at is NULL)
+  const [openGoalsCount, setOpenGoalsCount] = useState<number>(0);
 
   // ✅ Survey badge state
   const [surveyAvailable, setSurveyAvailable] = useState<boolean>(false);
@@ -215,6 +215,15 @@ export default function HomeScreen() {
       .eq("is_read", false);
 
     setUnreadCount(count ?? 0);
+
+    // ✅ Goals badge count = goals where completed_at IS NULL
+    const { count: goalsOpenCount } = await supabase
+      .from("goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .is("completed_at", null);
+
+    setOpenGoalsCount(goalsOpenCount ?? 0);
 
     // ✅ Bonus badge count = open items across all three bonus areas
     const nowIso = new Date().toISOString();
@@ -405,7 +414,7 @@ export default function HomeScreen() {
         label: "Annual Training",
         icon: "🎓",
         color: "#8B5CF6",
-        route: "/annual-training" as Href,
+        route: "/admin/annual-training" as Href,
       },
       {
         key: "messages",
@@ -436,6 +445,7 @@ export default function HomeScreen() {
   const renderBadge = (cardKey: string) => {
     if (cardKey === "messages" && unreadCount > 0)
       return <View style={styles.badgeDot} />;
+
     if (cardKey === "bonus" && bonusCount > 0)
       return (
         <View style={styles.countBadge}>
@@ -444,12 +454,15 @@ export default function HomeScreen() {
           </Text>
         </View>
       );
-    if (cardKey === "survey" && surveyAvailable)
-      return <View style={styles.badgeDot} />;
+
+    if (cardKey === "survey" && surveyAvailable) return <View style={styles.badgeDot} />;
+
+    if (cardKey === "goals" && openGoalsCount > 0) return <View style={styles.badgeDot} />;
+
     return null;
   };
 
-  // --- Hub sizing
+  // --- Hub sizing (kept as-is from your latest approach)
   const hubSize = Math.min(320, screenWidth - Spacing.screenPadding * 2);
 
   // bubbles
@@ -523,183 +536,193 @@ export default function HomeScreen() {
         />
       </View>
 
-      <View style={styles.headerWrapper}>
-        <AppHeader
-          greeting={`Hi${firstName ? `, ${firstName}` : ""}`}
-          subtitle={dailyQuote}
-        />
-      </View>
-
-      {/* Featured (hub-only rotation) */}
-      <Animated.View
-        style={[styles.featuredWrap, { transform: [{ scale: pulseScale }] }]}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() =>
-            featuredWheelCard.route && router.push(featuredWheelCard.route)
-          }
-          style={[
-            styles.featuredCard,
-            { backgroundColor: featuredWheelCard.color },
-          ]}
-        >
-          <LinearGradient
-            colors={[
-              "rgba(255,255,255,0.26)",
-              "rgba(255,255,255,0.05)",
-              "rgba(255,255,255,0.02)",
-            ]}
-            start={{ x: 1, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={styles.featuredOverlay}
+        <View style={styles.headerWrapper}>
+          <AppHeader
+            greeting={`Hi${firstName ? `, ${firstName}` : ""}`}
+            subtitle={dailyQuote}
           />
+        </View>
 
-          <View style={styles.featuredLeft}>
-            <Text style={styles.featuredKicker} numberOfLines={1}>
-              Featured
-            </Text>
-            <Text style={styles.featuredTitle} numberOfLines={1}>
-              {featuredWheelCard.label}
-            </Text>
-          </View>
-
-          <View style={styles.featuredRight}>
-            <View style={styles.featuredIconBubble}>
-              <Text style={styles.featuredIcon}>{featuredWheelCard.icon}</Text>
-            </View>
-
-            {featuredWheelCard.key === "bonus" && renderBadge("bonus")}
-            {featuredWheelCard.key !== "bonus" && (
-              <Text style={styles.featuredTap}>Tap</Text>
-            )}
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Hub */}
-      <View style={[styles.hubWrap, { height: hubSize }]}>
-        <View style={[styles.hubStage, { width: hubSize, height: hubSize }]}>
-          {/* center logo */}
-          <Animated.View
+        {/* Featured (hub-only rotation) */}
+        <Animated.View
+          style={[styles.featuredWrap, { transform: [{ scale: pulseScale }] }]}
+        >
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() =>
+              featuredWheelCard.route && router.push(featuredWheelCard.route)
+            }
             style={[
-              styles.hubCore,
-              { transform: [{ translateY: logoFloatY }, { translateY: 16 }] },
+              styles.featuredCard,
+              { backgroundColor: featuredWheelCard.color },
             ]}
           >
-            <Image
-              source={require("../assets/images/FTG1.png")}
-              style={styles.hubLogo}
-              resizeMode="contain"
+            <LinearGradient
+              colors={[
+                "rgba(255,255,255,0.26)",
+                "rgba(255,255,255,0.05)",
+                "rgba(255,255,255,0.02)",
+              ]}
+              start={{ x: 1, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.featuredOverlay}
             />
-          </Animated.View>
 
-          {/* bubbles around logo */}
-          {positionedHub.map(({ card, dx, dy }) => {
-            const isFeatured = card.key === featuredWheelCard.key;
-            const center = hubSize / 2;
+            <View style={styles.featuredLeft}>
+              <Text style={styles.featuredKicker} numberOfLines={1}>
+                Featured
+              </Text>
+              <Text style={styles.featuredTitle} numberOfLines={1}>
+                {featuredWheelCard.label}
+              </Text>
+            </View>
 
-            // true center positioning
-            const left = center + dx - bubbleRadius;
-            const top = center + dy - bubbleRadius;
+            <View style={styles.featuredRight}>
+              <View style={styles.featuredIconBubble}>
+                <Text style={styles.featuredIcon}>{featuredWheelCard.icon}</Text>
+              </View>
 
-            return (
+              {featuredWheelCard.key === "bonus" && renderBadge("bonus")}
+              {featuredWheelCard.key !== "bonus" && (
+                <Text style={styles.featuredTap}>Tap</Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* Hub */}
+        <View style={[styles.hubWrap, { height: hubSize }]}>
+          <View style={[styles.hubStage, { width: hubSize, height: hubSize }]}>
+            {/* center logo */}
+            <Animated.View
+              style={[
+                styles.hubCore,
+                { transform: [{ translateY: logoFloatY }, { translateY: 16 }] },
+              ]}
+            >
+              <Image
+                source={require("../assets/images/FTG1.png")}
+                style={styles.hubLogo}
+                resizeMode="contain"
+              />
+            </Animated.View>
+
+            {/* bubbles around logo */}
+            {positionedHub.map(({ card, dx, dy }) => {
+              const isFeatured = card.key === featuredWheelCard.key;
+              const center = hubSize / 2;
+
+              // true center positioning
+              const left = center + dx - bubbleRadius;
+              const top = center + dy - bubbleRadius;
+
+              return (
+                <TouchableOpacity
+                  key={card.key}
+                  activeOpacity={0.9}
+                  onPress={() => card.route && router.push(card.route)}
+                  style={[styles.hubItem, { left, top }]}
+                >
+                  <View
+                    style={[
+                      styles.hubBubble,
+                      {
+                        width: bubbleSize,
+                        height: bubbleSize,
+                        borderRadius: bubbleRadius,
+                        backgroundColor: card.color,
+                        opacity: isFeatured ? 1 : 0.94,
+                        transform: [{ scale: isFeatured ? 1.08 : 1 }],
+                      },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={[
+                        "rgba(255,255,255,0.34)",
+                        "rgba(255,255,255,0.08)",
+                        "rgba(255,255,255,0.03)",
+                      ]}
+                      start={{ x: 1, y: 0 }}
+                      end={{ x: 0, y: 1 }}
+                      style={styles.hubBubbleOverlay}
+                    />
+                    <View style={styles.hubBubbleHighlight} />
+                    <Text style={styles.hubEmoji}>{card.icon}</Text>
+                    {renderBadge(card.key)}
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.hubLabel,
+                      isFeatured && styles.hubLabelFeatured,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {card.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Bottom mini area */}
+        <View style={styles.bottomArea}>
+          <View style={styles.miniRow}>
+            {bottomCards.map((card) => (
               <TouchableOpacity
                 key={card.key}
                 activeOpacity={0.9}
                 onPress={() => card.route && router.push(card.route)}
-                style={[styles.hubItem, { left, top }]}
+                style={[styles.miniCard, { backgroundColor: card.color }]}
               >
-                <View
-                  style={[
-                    styles.hubBubble,
-                    {
-                      width: bubbleSize,
-                      height: bubbleSize,
-                      borderRadius: bubbleRadius,
-                      backgroundColor: card.color,
-                      opacity: isFeatured ? 1 : 0.94,
-                      transform: [{ scale: isFeatured ? 1.08 : 1 }],
-                    },
-                  ]}
-                >
-                  <LinearGradient
-                    colors={[
-                      "rgba(255,255,255,0.34)",
-                      "rgba(255,255,255,0.08)",
-                      "rgba(255,255,255,0.03)",
-                    ]}
-                    start={{ x: 1, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={styles.hubBubbleOverlay}
-                  />
-                  <View style={styles.hubBubbleHighlight} />
-                  <Text style={styles.hubEmoji}>{card.icon}</Text>
-                  {renderBadge(card.key)}
-                </View>
-
-                <Text
-                  style={[styles.hubLabel, isFeatured && styles.hubLabelFeatured]}
-                  numberOfLines={1}
-                >
-                  {card.label}
-                </Text>
+                <Text style={styles.miniIcon}>{card.icon}</Text>
+                {renderBadge(card.key)}
+                <Text style={styles.miniTitle}>{card.label}</Text>
               </TouchableOpacity>
-            );
-          })}
-        </View>
-      </View>
+            ))}
+          </View>
 
-      {/* Bottom mini area */}
-      <View style={styles.bottomArea}>
-        <View style={styles.miniRow}>
-          {bottomCards.map((card) => (
+          <View style={styles.miniRow2}>
             <TouchableOpacity
-              key={card.key}
               activeOpacity={0.9}
-              onPress={() => card.route && router.push(card.route)}
-              style={[styles.miniCard, { backgroundColor: card.color }]}
+              onPress={() => router.push("/admin" as Href)}
+              style={[
+                styles.miniCardWide,
+                { backgroundColor: Colors.cards.admin },
+              ]}
             >
-              <Text style={styles.miniIcon}>{card.icon}</Text>
-              {renderBadge(card.key)}
-              <Text style={styles.miniTitle}>{card.label}</Text>
+              <Text style={styles.miniIcon}>🛠️</Text>
+              <Text style={styles.miniTitle}>Admin</Text>
             </TouchableOpacity>
-          ))}
-        </View>
 
-        <View style={styles.miniRow2}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => router.push("/admin" as Href)}
-            style={[
-              styles.miniCardWide,
-              { backgroundColor: Colors.cards.admin },
-            ]}
-          >
-            <Text style={styles.miniIcon}>🛠️</Text>
-            <Text style={styles.miniTitle}>Admin</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => router.push("/settings" as Href)}
+              style={[
+                styles.miniCardWide,
+                { backgroundColor: Colors.cards.settings },
+              ]}
+            >
+              <Text style={styles.miniIcon}>⚙️</Text>
+              <Text style={styles.miniTitle}>Settings</Text>
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => router.push("/settings" as Href)}
-            style={[
-              styles.miniCardWide,
-              { backgroundColor: Colors.cards.settings },
-            ]}
-          >
-            <Text style={styles.miniIcon}>⚙️</Text>
-            <Text style={styles.miniTitle}>Settings</Text>
-          </TouchableOpacity>
+          <View style={styles.streakInline}>
+            <Text style={styles.streakPrimary}>🔥 {loginStreak}-Day Streak</Text>
+            <Text style={styles.streakSecondary}>
+              Points awarded for 5 consecutive days of login
+            </Text>
+          </View>
         </View>
-
-        <View style={styles.streakInline}>
-          <Text style={styles.streakPrimary}>🔥 {loginStreak}-Day Streak</Text>
-          <Text style={styles.streakSecondary}>
-            Points awarded for 5 consecutive days of login
-          </Text>
-        </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -710,7 +733,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     paddingTop: Layout.topScreenPadding,
     paddingHorizontal: Spacing.screenPadding,
-    paddingBottom: 12, // a touch more safe-space
+  },
+
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 44,
   },
 
   // background accents
@@ -759,16 +788,15 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sectionGap - 6,
   },
 
-  // Featured: slightly shorter + keep its current placement
   featuredWrap: {
     marginBottom: 12,
     marginTop: -24,
   },
   featuredCard: {
-    height: 82, // was 88 (slightly smaller)
+    height: 82,
     borderRadius: Radius.card,
     overflow: "hidden",
-    paddingVertical: 10, // was 12
+    paddingVertical: 10,
     paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
@@ -786,7 +814,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "800",
     letterSpacing: 0.6,
-    marginBottom: 4, // was 5
+    marginBottom: 4,
     textTransform: "uppercase",
   },
   featuredTitle: {
@@ -801,7 +829,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   featuredIconBubble: {
-    width: 46, // slightly tighter to match reduced height
+    width: 46,
     height: 46,
     borderRadius: 16,
     backgroundColor: "rgba(0,0,0,0.18)",
@@ -817,12 +845,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  // Hub moved down ~1/8"
   hubWrap: {
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 6,
-    marginTop: 12, // NEW: shifts the whole hub down
+    marginTop: 12,
   },
   hubStage: {
     alignItems: "center",
@@ -928,19 +955,19 @@ const styles = StyleSheet.create({
 
   bottomArea: {
     paddingBottom: 6,
-    marginTop: 36,
+    marginTop: 18,
   },
   miniRow: {
     flexDirection: "row",
     gap: 10,
     justifyContent: "space-between",
-    marginBottom: 18, // was 8 (adds space below the 3 cards)
+    marginBottom: 12,
   },
   miniRow2: {
     flexDirection: "row",
     gap: 10,
     justifyContent: "space-between",
-    marginBottom: 18, // was 8 (adds space below Admin/Settings)
+    marginBottom: 12,
   },
   miniCard: {
     flex: 1,
@@ -982,7 +1009,7 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     paddingHorizontal: 14,
     alignItems: "center",
-    marginBottom: 8, // ensures we don't hug the bottom
+    marginBottom: 8,
   },
   streakPrimary: {
     fontSize: 14,

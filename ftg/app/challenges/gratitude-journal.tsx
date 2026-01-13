@@ -1,3 +1,7 @@
+// app/challenges/gratitude-journal.tsx
+// FULL FILE REPLACEMENT
+// Change: after successful save, return to /main
+
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -131,7 +135,9 @@ export default function GratitudeJournalScreen() {
     setShowGoalOptions(false);
     setSaving(false);
 
-    Alert.alert("Saved", "Your gratitude entry has been recorded.");
+    Alert.alert("Saved", "Your gratitude entry has been recorded.", [
+      { text: "OK", onPress: () => router.push("/main") },
+    ]);
   }
 
   return (
@@ -189,7 +195,7 @@ export default function GratitudeJournalScreen() {
                     style={styles.goalOption}
                     onPress={() => {
                       setSelectedGoal(goal);
-                      setShowGoalOptions(false); // 👈 collapse after select
+                      setShowGoalOptions(false);
                     }}
                   >
                     <Text style={styles.goalText}>{goal}</Text>

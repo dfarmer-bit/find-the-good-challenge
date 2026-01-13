@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "ftg",
+    "name": "FTG",
     "slug": "ftg",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/FTG1.png",
     "scheme": "ftg",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
