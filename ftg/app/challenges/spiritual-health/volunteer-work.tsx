@@ -139,7 +139,7 @@ export default function VolunteerWorkScreen() {
             <Text style={styles.title}>Volunteer Work</Text>
             <Text style={styles.subtitle}>
               <Text style={styles.subtitleBold}>
-                500 Points | Once Per Month{"\n"}
+                +500 Points | Once Per Month{"\n"}
               </Text>
               Log volunteer work completed with a nonprofit,
               community organization, or service initiative.

@@ -134,11 +134,14 @@ export default function SpiritualEventScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.headerText}>
-            <Text style={styles.icon}>✨</Text>
-            <Text style={styles.title}>
-              Spiritual Event Attendance
-            </Text>
-          </View>
+  <Text style={styles.icon}>✨</Text>
+  <Text style={styles.title}>Spiritual Event Attendance</Text>
+  <Text style={styles.subtitle}>
+    <Text style={styles.subtitleBold}>+150 Points{"\n"}</Text>
+    Points are automatically awarded. Additional points are available for attending spiritual events weekly for 3 months (+250 points), 6 months (+500 points), and 9 months (+750 points). Any break in the weekly streak results in a reset and you must start again. Weeks run from Monday at 12:00 am through Sunday at 11:59 pm.
+  </Text>
+</View>
+
 
           <TextInput
             style={styles.input}
@@ -266,6 +269,19 @@ const styles = StyleSheet.create({
     borderRadius: Radius.card,
     alignItems: "center",
   },
+  subtitle: {
+  fontSize: Typography.quote.fontSize,
+  color: Colors.textSecondary,
+  textAlign: "center",
+  marginTop: 4,
+  marginBottom: 16,
+},
+
+subtitleBold: {
+  fontWeight: "800",
+  color: Colors.textPrimary,
+},
+
   submitDisabled: { opacity: 0.4 },
   submitText: {
     color: Colors.textPrimary,

@@ -19,8 +19,8 @@ export default function WalkingRules() {
         <Text style={styles.text}>• Points are awarded automatically</Text>
 
         <Text style={styles.sectionTitle}>Step goals</Text>
-        <Text style={styles.text}>• 5,000 steps earns points</Text>
-        <Text style={styles.text}>• 10,000 steps earns bonus points</Text>
+        <Text style={styles.text}>• 5,000 steps earns +100 points</Text>
+        <Text style={styles.text}>• 10,000 steps earns+250 bonus points</Text>
 
         <Text style={styles.sectionTitle}>Using a phone or watch</Text>
         <Text style={styles.text}>

@@ -152,10 +152,10 @@ export default function SeminarConfScreen() {
             </Text>
             <Text style={styles.subtitle}>
               <Text style={styles.subtitleBold}>
-                500 Points{"\n"}
+                +500 Points{"\n"}
               </Text>
               Submit a seminar or conference you attended that contributed to
-              your professional growth.
+              your professional growth.  Requires admin approval for points.
             </Text>
           </View>
 

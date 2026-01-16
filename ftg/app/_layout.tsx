@@ -1,19 +1,19 @@
 // app/_layout.tsx
 // FULL FILE REPLACEMENT
-// Fix: add Safe Area padding app-wide so Android bottom nav/gesture area doesn't cover your bottom buttons.
+// Fix: remove global Safe Area bottom padding (it breaks full-screen video/intro).
+// Intro video should be true edge-to-edge.
 
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, View } from "react-native";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
 function RootStack() {
   const router = useRouter();
   const segments = useSegments();
-  const insets = useSafeAreaInsets();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ function RootStack() {
       }
 
       if (session && inAuth) {
-        router.replace("/main");
+        router.replace("/intro");
       }
 
       setChecking(false);
@@ -70,7 +70,6 @@ function RootStack() {
           headerShown: false,
           contentStyle: {
             backgroundColor: Colors.background,
-            paddingBottom: insets.bottom,
           },
         }}
       />

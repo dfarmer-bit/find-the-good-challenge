@@ -1,6 +1,7 @@
 // app/admin/index.tsx
 // FULL FILE REPLACEMENT
-// Wire Assign Training card to: /admin/annual-training/assign-training
+// Remove Assign Training card
+// Route Send Alert card to: /admin/send-alert/alert
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -176,12 +177,14 @@ export default function AdminDashboardScreen() {
         color: "#D67A2F",
         route: "/admin/messages/send",
       },
+
+      // ✅ New: Send Alert
       {
-        key: "assign-training",
-        label: "Assign\nTraining",
-        icon: "🎓",
-        color: "#3A86FF",
-        route: "/admin/annual-training/assign-training",
+        key: "send-alert",
+        label: "Send\nAlert",
+        icon: "🚨",
+        color: "#E11D48",
+        route: "/admin/send-alert/alert",
       },
     ],
     [gymCount, spotlightCount, otherCount]

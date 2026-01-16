@@ -21,33 +21,35 @@ export default function GymScreen() {
     <View style={styles.container}>
       <AppHeader />
 
-      <View style={styles.content}>
+      <View style={styles.headerText}>
+        <Text style={styles.icon}>🏋️‍♂️</Text>
         <Text style={styles.title}>Gym Challenge</Text>
         <Text style={styles.subtitle}>
+          <Text style={styles.subtitleBold}>
+            Worth 100 points | One time only{"\n"}
+          </Text>
           Earn points for verified gym visits.
         </Text>
-
-        <View style={styles.infoBox}>
-          <Text style={styles.infoText}>
-            • Activate a gym once to unlock check-ins{"\n"}
-            • Visits must last at least 15 minutes{"\n"}
-            • Weekly and streak bonuses apply automatically
-          </Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.primaryButton}
-          onPress={() => router.push("/challenges/gym-activate")}
-        >
-          <Text style={styles.primaryButtonText}>Activate Gym</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Check In</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Bottom Back */}
+      <View style={styles.infoBox}>
+        <Text style={styles.infoText}>• Gym Activation +100 points (one time only)</Text>
+        <Text style={styles.infoText}>• Activate a gym once to unlock check-ins</Text>
+        <Text style={styles.infoText}>• Visits must last at least 15 minutes</Text>
+        <Text style={styles.infoText}>• Weekly and streak bonuses apply automatically</Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={() => router.push("/challenges/gym-activate")}
+      >
+        <Text style={styles.primaryButtonText}>Activate Gym</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.secondaryButton}>
+        <Text style={styles.secondaryButtonText}>Check In</Text>
+      </TouchableOpacity>
+
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.backButton}
@@ -69,9 +71,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
   },
 
-  content: {
+  headerText: {
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 12,
+  },
+
+  icon: {
+    fontSize: 42,
+    marginBottom: 6,
   },
 
   title: {
@@ -87,6 +95,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     textAlign: "center",
     marginBottom: 16,
+  },
+
+  subtitleBold: {
+    fontWeight: "700",
+    color: Colors.textPrimary,
   },
 
   infoBox: {

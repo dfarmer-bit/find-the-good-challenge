@@ -97,9 +97,10 @@ export default function WorkIdeaScreen() {
             <Text style={styles.icon}>💡</Text>
             <Text style={styles.title}>Work Improvement Idea</Text>
             <Text style={styles.subtitle}>
-              <Text style={styles.subtitleBold}>100 Points{"\n"}</Text>
+              <Text style={styles.subtitleBold}>+100 Points{"\n"}</Text>
               Share an idea that could improve workflows, teamwork, efficiency,
-              or the overall work environment. Limit 1x per week.
+              or the overall work environment. Limit 1x per week. Requires 
+              admin approval for points.
             </Text>
           </View>
 

@@ -1,6 +1,6 @@
 // app/main.tsx
 // FULL FILE REPLACEMENT
-// Add: Goals badge dot when user has any open goals (completed_at is NULL)
+// ONLY change: Events badge moves to bottom-center (not top-right)
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
@@ -76,6 +76,9 @@ export default function HomeScreen() {
 
   // ✅ Survey badge state
   const [surveyAvailable, setSurveyAvailable] = useState<boolean>(false);
+
+  // ✅ Events badge state (upcoming invites not checked-in)
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState<number>(0);
 
   // featured rotation index (hub only)
   const [featuredIndex, setFeaturedIndex] = useState<number>(0);
@@ -330,6 +333,29 @@ export default function HomeScreen() {
     }
 
     setSurveyAvailable(showSurvey);
+
+    // ✅ Events badge: upcoming invites (RLS-safe, no joins)
+    const { data: invites } = await supabase
+      .from("event_invites")
+      .select("event_id")
+      .eq("user_id", user.id)
+      .is("checked_in_at", null);
+
+    if (!invites || invites.length === 0) {
+      setUpcomingEventsCount(0);
+    } else {
+      const eventIds = invites.map((i) => i.event_id);
+      const nowIso2 = new Date().toISOString();
+
+      const { count } = await supabase
+        .from("events")
+        .select("id", { count: "exact", head: true })
+        .in("id", eventIds)
+        .gt("start_time", nowIso2)
+        .is("cancelled_at", null);
+
+      setUpcomingEventsCount(count ?? 0);
+    }
   }, []);
 
   useEffect(() => {
@@ -341,6 +367,11 @@ export default function HomeScreen() {
       loadData();
     }, [loadData])
   );
+
+  const handleLogout = useCallback(async () => {
+    await supabase.auth.signOut();
+    router.replace("/login" as Href);
+  }, [router]);
 
   // --- Hub (these 5) — one-word labels
   const wheelCards: CardItem[] = useMemo(
@@ -399,34 +430,6 @@ export default function HomeScreen() {
     return () => clearInterval(t);
   }, [wheelCards.length]);
 
-  // --- Bottom mini row (3)
-  const bottomCards: CardItem[] = useMemo(
-    () => [
-      {
-        key: "survey",
-        label: "Survey",
-        icon: "📝",
-        color: "#6DA8FF",
-        route: "/survey" as Href,
-      },
-      {
-        key: "training",
-        label: "Annual Training",
-        icon: "🎓",
-        color: "#8B5CF6",
-        route: "/admin/annual-training" as Href,
-      },
-      {
-        key: "messages",
-        label: "Messages",
-        icon: "💬",
-        color: Colors.cards.messages,
-        route: "/messages" as Href,
-      },
-    ],
-    []
-  );
-
   const pulseScale = pulse.interpolate({
     inputRange: [0, 1],
     outputRange: [1, 1.018],
@@ -446,6 +449,16 @@ export default function HomeScreen() {
     if (cardKey === "messages" && unreadCount > 0)
       return <View style={styles.badgeDot} />;
 
+    // ✅ Events badge now bottom-center
+    if (cardKey === "events" && upcomingEventsCount > 0)
+      return (
+        <View style={styles.countBadgeBottomCenter}>
+          <Text style={styles.countBadgeText}>
+            {upcomingEventsCount > 99 ? "99+" : String(upcomingEventsCount)}
+          </Text>
+        </View>
+      );
+
     if (cardKey === "bonus" && bonusCount > 0)
       return (
         <View style={styles.countBadge}>
@@ -455,9 +468,11 @@ export default function HomeScreen() {
         </View>
       );
 
-    if (cardKey === "survey" && surveyAvailable) return <View style={styles.badgeDot} />;
+    if (cardKey === "survey" && surveyAvailable)
+      return <View style={styles.badgeDot} />;
 
-    if (cardKey === "goals" && openGoalsCount > 0) return <View style={styles.badgeDot} />;
+    if (cardKey === "goals" && openGoalsCount > 0)
+      return <View style={styles.badgeDot} />;
 
     return null;
   };
@@ -549,51 +564,76 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* Featured (hub-only rotation) */}
+        {/* Featured row: Logout square + Featured card */}
         <Animated.View
           style={[styles.featuredWrap, { transform: [{ scale: pulseScale }] }]}
         >
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() =>
-              featuredWheelCard.route && router.push(featuredWheelCard.route)
-            }
-            style={[
-              styles.featuredCard,
-              { backgroundColor: featuredWheelCard.color },
-            ]}
-          >
-            <LinearGradient
-              colors={[
-                "rgba(255,255,255,0.26)",
-                "rgba(255,255,255,0.05)",
-                "rgba(255,255,255,0.02)",
+          <View style={styles.featuredRow}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleLogout}
+              style={styles.logoutButton}
+            >
+              <LinearGradient
+                colors={[
+                  "rgba(255,255,255,0.20)",
+                  "rgba(255,255,255,0.06)",
+                  "rgba(255,255,255,0.03)",
+                ]}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <Text style={[styles.featuredTap, styles.logoutIcon]}>🚪</Text>
+              <Text style={styles.featuredTap}>Log out</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() =>
+                featuredWheelCard.route && router.push(featuredWheelCard.route)
+              }
+              style={[
+                styles.featuredCard,
+                { backgroundColor: featuredWheelCard.color },
               ]}
-              start={{ x: 1, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.featuredOverlay}
-            />
+            >
+              <LinearGradient
+                colors={[
+                  "rgba(255,255,255,0.26)",
+                  "rgba(255,255,255,0.05)",
+                  "rgba(255,255,255,0.02)",
+                ]}
+                start={{ x: 1, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.featuredOverlay}
+              />
 
-            <View style={styles.featuredLeft}>
-              <Text style={styles.featuredKicker} numberOfLines={1}>
-                Featured
-              </Text>
-              <Text style={styles.featuredTitle} numberOfLines={1}>
-                {featuredWheelCard.label}
-              </Text>
-            </View>
-
-            <View style={styles.featuredRight}>
-              <View style={styles.featuredIconBubble}>
-                <Text style={styles.featuredIcon}>{featuredWheelCard.icon}</Text>
+              <View style={styles.featuredLeft}>
+                <Text style={styles.featuredKicker} numberOfLines={1}>
+                  Featured
+                </Text>
+                <Text style={styles.featuredTitle} numberOfLines={1}>
+                  {featuredWheelCard.label}
+                </Text>
               </View>
 
-              {featuredWheelCard.key === "bonus" && renderBadge("bonus")}
-              {featuredWheelCard.key !== "bonus" && (
-                <Text style={styles.featuredTap}>Tap</Text>
-              )}
-            </View>
-          </TouchableOpacity>
+              <View style={styles.featuredRight}>
+                <View style={styles.featuredIconBubble}>
+                  <Text style={styles.featuredIcon}>
+                    {featuredWheelCard.icon}
+                  </Text>
+                </View>
+
+                {featuredWheelCard.key === "bonus" && renderBadge("bonus")}
+                {featuredWheelCard.key === "events" && renderBadge("events")}
+                {featuredWheelCard.key !== "bonus" &&
+                  featuredWheelCard.key !== "events" && (
+                    <Text style={styles.featuredTap}>Tap</Text>
+                  )}
+              </View>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
 
         {/* Hub */}
@@ -672,23 +712,35 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Bottom mini area */}
+        {/* Bottom area */}
         <View style={styles.bottomArea}>
-          <View style={styles.miniRow}>
-            {bottomCards.map((card) => (
-              <TouchableOpacity
-                key={card.key}
-                activeOpacity={0.9}
-                onPress={() => card.route && router.push(card.route)}
-                style={[styles.miniCard, { backgroundColor: card.color }]}
-              >
-                <Text style={styles.miniIcon}>{card.icon}</Text>
-                {renderBadge(card.key)}
-                <Text style={styles.miniTitle}>{card.label}</Text>
-              </TouchableOpacity>
-            ))}
+          {/* Row 1: Survey + Messages (now same size/shape as Admin/Settings) */}
+          <View style={styles.miniRow2}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => router.push("/survey" as Href)}
+              style={[styles.miniCardWide, { backgroundColor: "#6DA8FF" }]}
+            >
+              <Text style={styles.miniIcon}>📝</Text>
+              {renderBadge("survey")}
+              <Text style={styles.miniTitle}>Survey</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => router.push("/messages" as Href)}
+              style={[
+                styles.miniCardWide,
+                { backgroundColor: Colors.cards.messages },
+              ]}
+            >
+              <Text style={styles.miniIcon}>💬</Text>
+              {renderBadge("messages")}
+              <Text style={styles.miniTitle}>Messages</Text>
+            </TouchableOpacity>
           </View>
 
+          {/* Row 2: Admin + Settings */}
           <View style={styles.miniRow2}>
             <TouchableOpacity
               activeOpacity={0.9}
@@ -792,7 +844,31 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: -24,
   },
+
+  featuredRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+
+  logoutButton: {
+    width: 82,
+    height: 82,
+    borderRadius: 18,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.10)",
+  },
+  logoutIcon: {
+    fontSize: 32,
+    opacity: 0.95,
+  },
+
   featuredCard: {
+    flex: 1,
     height: 82,
     borderRadius: Radius.card,
     overflow: "hidden",
@@ -946,6 +1022,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+
+  // ✅ NEW: Events badge bottom-center
+  countBadgeBottomCenter: {
+    position: "absolute",
+    bottom: 8,
+    left: "50%",
+    transform: [{ translateX: -11 }],
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: "#FF4D4F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  countBadgeTopRight: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 22,
+    height: 22,
+    paddingHorizontal: 6,
+    borderRadius: 11,
+    backgroundColor: "#FF4D4F",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   countBadgeText: {
     color: "#FFFFFF",
     fontSize: 12,
@@ -957,28 +1061,11 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     marginTop: 18,
   },
-  miniRow: {
-    flexDirection: "row",
-    gap: 10,
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
   miniRow2: {
     flexDirection: "row",
     gap: 10,
     justifyContent: "space-between",
     marginBottom: 12,
-  },
-  miniCard: {
-    flex: 1,
-    borderRadius: 18,
-    paddingVertical: 11,
-    paddingHorizontal: 12,
-    overflow: "hidden",
-    minHeight: 66,
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
   },
   miniCardWide: {
     flex: 1,

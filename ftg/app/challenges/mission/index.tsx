@@ -65,15 +65,21 @@ export default function MissionIndex() {
     <View style={styles.container}>
       <AppHeader />
 
-      <View style={styles.content}>
+      {/* Header section ONLY (icon/title/subtitle) */}
+      <View style={styles.headerText}>
+        <Text style={styles.icon}>🧭</Text>
         <Text style={styles.title}>Personal Mission Statement</Text>
 
+        <Text style={styles.subtitle}>
+          <Text style={styles.subtitleBold}>+1000 Points | One Time{"\n"}</Text>
+          Let’s define what matters most to you.
+        </Text>
+      </View>
+
+      {/* Content section ONLY (buttons/extra text) */}
+      <View style={styles.content}>
         {!hasMission ? (
           <>
-            <Text style={styles.subtitle}>
-              Let’s define what matters most to you.
-            </Text>
-
             <TouchableOpacity
               style={[styles.button, styles.startButton]}
               onPress={handleStart}
@@ -125,7 +131,10 @@ export default function MissionIndex() {
       {/* Bottom Navigation (matches Spiritual Health) */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
             <Text style={styles.backIcon}>⬅️</Text>
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
@@ -158,25 +167,47 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
 
+  // ✅ header-only wrapper (does NOT include buttons)
+  headerText: {
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 12,
+  },
+
+  // ✅ icon style (header only)
+  icon: {
+    fontSize: 42,
+    marginBottom: 6,
+  },
+
   content: {
     flex: 1,
     justifyContent: "flex-start",
-    paddingTop: 80,
+    paddingTop: 0,
   },
 
+  // ✅ standardized header spacing
   title: {
     fontSize: 22,
     fontWeight: "700",
     color: Colors.textPrimary,
-    marginBottom: 10,
+    marginBottom: 0,
     textAlign: "center",
   },
 
+  // ✅ standardized header spacing
   subtitle: {
     fontSize: 14,
     color: Colors.textSecondary,
-    marginBottom: 24,
+    marginTop: 0,
+    marginBottom: 16,
     textAlign: "center",
+  },
+
+  // ✅ bold first line inside subtitle
+  subtitleBold: {
+    fontWeight: "800",
+    color: Colors.textPrimary,
   },
 
   button: {

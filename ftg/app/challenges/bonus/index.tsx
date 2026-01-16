@@ -1,24 +1,18 @@
 // app/challenges/bonus/index.tsx
-// FULL FILE REPLACEMENT (fix routes to match your folder structure)
+// FULL FILE REPLACEMENT
+// Bonus hub (Quizzes / Admin Assignments / Growth Missions)
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { AppHeader } from "../../../components/AppHeader";
-import {
-  Colors,
-  Components,
-  Layout,
-  Radius,
-  Spacing,
-  Typography,
-} from "../../../constants/theme";
+import { AppHeader } from "@/components/AppHeader";
+import { Colors, Components, Layout, Radius, Spacing, Typography } from "@/constants/theme";
 
 type Card = {
   label: string;
   icon: string;
   color: string;
-  route?: string;
+  route: string;
 };
 
 export default function BonusPointsHomeScreen() {
@@ -35,13 +29,13 @@ export default function BonusPointsHomeScreen() {
       label: "Admin\nAssignments",
       icon: "📋",
       color: Colors.cards.admin,
-      route: "/challenges/bonus/admin-assignments/admin-assignments",
+      route: "/challenges/bonus/admin-assignments",
     },
     {
       label: "Growth\nMissions",
       icon: "🚀",
       color: Colors.cards.goals,
-      route: "/challenges/bonus/growth-missions/growth-missions",
+      route: "/challenges/bonus/growth-missions",
     },
   ];
 
@@ -58,8 +52,9 @@ export default function BonusPointsHomeScreen() {
         {cards.map((card, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => card.route && router.push(card.route as any)}
+            onPress={() => router.push(card.route as any)}
             style={[styles.card, { backgroundColor: card.color }]}
+            activeOpacity={0.9}
           >
             <LinearGradient
               colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
@@ -84,10 +79,7 @@ export default function BonusPointsHomeScreen() {
             <Text style={styles.backText}>Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/main" as any)}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/main" as any)}>
             <Text style={styles.backIcon}>🏠</Text>
             <Text style={styles.backText}>Home</Text>
           </TouchableOpacity>

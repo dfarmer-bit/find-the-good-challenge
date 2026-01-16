@@ -150,11 +150,16 @@ export default function GratitudeJournalScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.headerText}>
-            <Text style={styles.title}>Gratitude Journal</Text>
-            <Text style={styles.subtitle}>
-              This challenge may be completed once daily and is worth 10 points.
-            </Text>
-          </View>
+  <Text style={styles.icon}>🙏</Text>
+  <Text style={styles.title}>Gratitude Journal</Text>
+  <Text style={styles.subtitle}>
+    <Text style={styles.subtitleBold}>
+      +10 Points | Daily{"\n"}
+    </Text>
+    This challenge may be completed once daily. Using the Set As Goal button below will automatically place this journal entry into your goals section.
+  </Text>
+</View>
+
 
           <View style={styles.card}>
             <TextInput
@@ -322,6 +327,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
   },
+  icon: {
+  fontSize: 36,
+  marginBottom: 6,
+},
+
+subtitleBold: {
+  fontWeight: "800",
+  color: Colors.textPrimary,
+},
+
   bottomBar: {
     position: "absolute",
     bottom: Layout.bottomNavSpacing,

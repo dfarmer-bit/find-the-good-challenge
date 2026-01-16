@@ -1,4 +1,5 @@
 // app/signup.tsx
+// FULL FILE REPLACEMENT (adds Back to Login button under title)
 
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -7,6 +8,7 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -32,6 +34,8 @@ export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  const accentGreen = "#4CAF8F"; // Clinical button green
 
   const handleSignup = async () => {
     setError("");
@@ -90,7 +94,7 @@ export default function SignupScreen() {
       icon: "construct",
     },
     Clinical: {
-      color: "#4CAF8F",
+      color: accentGreen,
       icon: "medkit",
     },
     Administration: {
@@ -110,6 +114,10 @@ export default function SignupScreen() {
       >
         <Text style={styles.title}>Create Your Account</Text>
 
+        <Pressable onPress={() => router.replace("/")}>
+          <Text style={styles.backLink}>← Back to Login</Text>
+        </Pressable>
+
         {success && (
           <View style={styles.successBox}>
             <Text style={styles.successText}>
@@ -128,6 +136,7 @@ export default function SignupScreen() {
           <>
             {error !== "" && <Text style={styles.errorText}>{error}</Text>}
 
+            {/* First + Last */}
             <View style={styles.row}>
               <TextInput
                 style={[styles.input, styles.half]}
@@ -143,6 +152,23 @@ export default function SignupScreen() {
                 value={lastName}
                 onChangeText={setLastName}
               />
+            </View>
+
+            {/* Email */}
+            <TextInput
+              style={styles.input}
+              placeholder="Email Address"
+              placeholderTextColor="rgba(255,255,255,0.6)"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            {/* Department AFTER email */}
+            <View style={styles.deptHeaderRow}>
+              <Text style={styles.deptLabel}>Department</Text>
+              <Text style={styles.deptHint}>(Select One)</Text>
             </View>
 
             <View style={styles.departmentRow}>
@@ -176,16 +202,7 @@ export default function SignupScreen() {
               })}
             </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Email Address"
-              placeholderTextColor="rgba(255,255,255,0.6)"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-
+            {/* Password */}
             <View style={styles.passwordField}>
               <TextInput
                 style={styles.passwordInput}
@@ -195,9 +212,7 @@ export default function SignupScreen() {
                 value={password}
                 onChangeText={setPassword}
               />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-              >
+              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                 <Ionicons
                   name={showPassword ? "eye-off" : "eye"}
                   size={22}
@@ -206,6 +221,7 @@ export default function SignupScreen() {
               </TouchableOpacity>
             </View>
 
+            {/* Confirm */}
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
@@ -217,21 +233,31 @@ export default function SignupScreen() {
 
             <View style={styles.logoZone}>
               <TouchableOpacity
-                style={[
-                  styles.logoButton,
-                  loading && { opacity: 0.6 },
-                ]}
+                style={[styles.logoButton, loading && { opacity: 0.6 }]}
                 onPress={handleSignup}
                 disabled={loading}
+                activeOpacity={0.86}
               >
                 <Image
                   source={require("../assets/images/FTG1.png")}
                   style={styles.logo}
                   resizeMode="contain"
                 />
-                <Text style={styles.signupLabel}>
-                  {loading ? "Creating Account…" : "Sign Up"}
-                </Text>
+
+                <View style={styles.signupRow}>
+                  <Text style={styles.signupLabel}>
+                    {loading ? "Creating Account…" : "Sign Up"}
+                  </Text>
+                  <View style={styles.arrowPill}>
+                    <Ionicons
+                      name="arrow-forward"
+                      size={16}
+                      color={Colors.cards.complete}
+                    />
+                  </View>
+                </View>
+
+                <Text style={styles.tapHint}>Tap to create your account</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -253,7 +279,14 @@ const styles = StyleSheet.create({
     fontWeight: Typography.greeting.fontWeight,
     color: Colors.textPrimary,
     textAlign: "center",
-    marginBottom: 18,
+    marginBottom: 10,
+  },
+  backLink: {
+    textAlign: "center",
+    color: Colors.cards.complete,
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 16,
   },
   errorText: {
     color: "#FF6B6B",
@@ -279,15 +312,41 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   half: { width: "48%" },
+
+  // GREEN OUTLINE INPUTS
   input: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.10)",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     color: Colors.textPrimary,
     marginBottom: 12,
     fontSize: 15,
+
+    borderWidth: 1.5,
+    borderColor: "rgba(76,175,143,0.85)", // Clinical green
   },
+
+  deptHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 2,
+    marginBottom: 8,
+  },
+  deptLabel: {
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "700",
+    marginRight: 6,
+    opacity: 0.95,
+  },
+  deptHint: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
   departmentRow: {
     flexDirection: "row",
     marginBottom: 12,
@@ -310,19 +369,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginTop: 4,
   },
+
+  // GREEN OUTLINE PASSWORD FIELD
   passwordField: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.10)",
     borderRadius: 10,
     paddingHorizontal: 14,
     marginBottom: 12,
+
+    borderWidth: 1.5,
+    borderColor: "rgba(76,175,143,0.85)", // Clinical green
   },
   passwordInput: {
     flex: 1,
     paddingVertical: 12,
     color: Colors.textPrimary,
   },
+
   logoZone: {
     marginTop: 20,
     alignItems: "center",
@@ -330,20 +395,49 @@ const styles = StyleSheet.create({
   logoButton: {
     paddingVertical: 18,
     paddingHorizontal: 18,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.10)",
     borderWidth: 3,
     borderColor: Colors.cards.complete,
     borderRadius: 22,
     alignItems: "center",
+
+    shadowColor: "#000",
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 6,
   },
   logo: {
     width: 260,
     height: 180,
   },
-  signupLabel: {
+
+  signupRow: {
     marginTop: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signupLabel: {
     color: Colors.cards.complete,
     fontSize: 16,
+    fontWeight: "700",
+  },
+  arrowPill: {
+    marginLeft: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(0,0,0,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tapHint: {
+    marginTop: 8,
+    color: "rgba(255,255,255,0.65)",
+    fontSize: 12,
     fontWeight: "600",
   },
 });

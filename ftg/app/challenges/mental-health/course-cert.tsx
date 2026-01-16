@@ -155,10 +155,11 @@ export default function CourseCertScreen() {
             </Text>
             <Text style={styles.subtitle}>
               <Text style={styles.subtitleBold}>
-                1500 Points{"\n"}
+                +1500 Points{"\n"}
               </Text>
               Submit an online course or professional certification you’ve
-              completed that helps you grow in your role.
+              completed that helps you grow in your role.  Requiest admin 
+              approval for points.
             </Text>
           </View>
 

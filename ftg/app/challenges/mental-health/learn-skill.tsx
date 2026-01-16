@@ -140,12 +140,13 @@ export default function LearnSkillScreen() {
             <Text style={styles.title}>Learn a New Skill</Text>
             <Text style={styles.subtitle}>
               <Text style={styles.subtitleBold}>
-                500 Points | Once Per Month{"\n"}
+                +500 Points | Once Per Month{"\n"}
               </Text>
               Submit a new skill you’ve learned that improves how you work —
               such as new software, AI tools, or
               job-related skills. (Online courses and seminars have their own
-              challenges.) Take or add photo of skill.
+              challenges.) Take or add photo of skill. Requies admin approval 
+              for points.
             </Text>
           </View>
 

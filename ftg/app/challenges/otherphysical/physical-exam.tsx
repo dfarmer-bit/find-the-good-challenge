@@ -264,11 +264,12 @@ export default function PhysicalExamScreen() {
             <Text style={styles.title}>Physical Checkup</Text>
             <Text style={styles.subtitle}>
               <Text style={styles.subtitleBold}>
-                Worth 500 points | One time only{"\n"}
+                + 500 points | One time only{"\n"}
               </Text>
               Please upload or capture a picture verifying your checkup or
               physical, and do not include any personal health information. A
-              copy of the appointment verification is sufficient.
+              copy of the appointment verification is sufficient.  Requires admin
+              approval for points.
             </Text>
           </View>
 

@@ -10,6 +10,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Image,
 } from "react-native";
 import { Colors, Layout, Spacing, Typography } from "../constants/theme";
 import { supabase } from "../lib/supabase";
@@ -43,7 +44,6 @@ export default function LoginScreen() {
       return;
     }
 
-    // Record daily login (streak-safe)
     if (data?.user) {
       await supabase.rpc("record_daily_login", {
         p_user_id: data.user.id,
@@ -61,7 +61,16 @@ export default function LoginScreen() {
       keyboardVerticalOffset={Layout.topScreenPadding}
     >
       <View style={styles.inner}>
-        <Text style={styles.title}>Welcome Back</Text>
+         <Text style={{ color: "red", textAlign: "center" }}>IMAGE TEST</Text>
+
+<Image
+  source={require("./assets/FTG1.png")}
+  style={styles.logo}
+  resizeMode="contain"
+/>
+
+
+        <Text style={styles.title}>Find the Good</Text>
 
         <TextInput
           style={styles.input}
@@ -73,7 +82,6 @@ export default function LoginScreen() {
           onChangeText={setEmail}
         />
 
-        {/* Password with eye toggle */}
         <View style={styles.passwordWrapper}>
           <TextInput
             style={styles.passwordInput}
@@ -123,6 +131,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.screenPadding,
     paddingBottom: Platform.OS === "ios" ? 40 : 20,
   },
+
+  logo: {
+  width: 140,
+  height: 140,
+  alignSelf: "center",
+  marginBottom: 16,
+  backgroundColor: "red",
+},
 
   title: {
     fontSize: Typography.greeting.fontSize,

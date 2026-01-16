@@ -320,15 +320,20 @@ export default function SportScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.headerText}>
-            <Text style={styles.icon}>🏅</Text>
-            <Text style={styles.title}>Sporting Event</Text>
-            <Text style={styles.subtitle}>
-              May be completed weekly for 50 points. Please upload or capture a
-              picture at the event. Sporting events include baseball/softball,
-              golf, bowling, basketball, shooting, archery, or any other similar
-              activity. You MUST be a participating party to the event.
-            </Text>
-          </View>
+  <Text style={styles.icon}>🏅</Text>
+  <Text style={styles.title}>Sporting Event</Text>
+  <Text style={styles.subtitle}>
+    <Text style={styles.subtitleBold}>
+      +50 points | Weekly{"\n"}
+    </Text>
+    Please upload or capture a picture at the event. 
+    Sporting events include baseball/softball, golf, bowling, 
+    basketball, shooting, archery, or any other similar activity. 
+    You MUST be a participating party to the event.  Requires admin
+    approval for points.
+  </Text>
+</View>
+
 
           <View style={{ marginTop: 10 }}>
             <TextInput
@@ -509,6 +514,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
     lineHeight: 20,
   },
+
+  subtitleBold: {
+  fontWeight: "800",
+  color: Colors.textPrimary,
+},
 
   fieldLabel: {
     color: Colors.textSecondary,

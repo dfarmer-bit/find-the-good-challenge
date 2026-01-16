@@ -1,5 +1,4 @@
 // FILE: app/admin/reports/leaderboard.tsx
-// Paste this entire file.
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -67,9 +66,7 @@ export default function LeaderboardReport() {
         const db = normDept(b.department);
         if (da < db) return -1;
         if (da > db) return 1;
-
         if (b.total_points !== a.total_points) return b.total_points - a.total_points;
-
         const na = normName(a.full_name);
         const nb = normName(b.full_name);
         if (na < nb) return -1;
@@ -79,7 +76,6 @@ export default function LeaderboardReport() {
     } else {
       list.sort((a, b) => {
         if (b.total_points !== a.total_points) return b.total_points - a.total_points;
-
         const na = normName(a.full_name);
         const nb = normName(b.full_name);
         if (na < nb) return -1;
@@ -97,7 +93,6 @@ export default function LeaderboardReport() {
     }));
   }, [rowsRaw, sortMode]);
 
-  // ✅ removes TS red underline by asserting the *module* shape (VS Code type glitch)
   const FS = FileSystem as any;
 
   const getWritableDir = (): string => {
@@ -108,8 +103,8 @@ export default function LeaderboardReport() {
 
   const runReport = async () => {
     if (loading) return;
-
     setLoading(true);
+
     try {
       const year = new Date().getFullYear();
 
@@ -184,81 +179,65 @@ export default function LeaderboardReport() {
       sortMode === "dept" ? "Department (A–Z), then Points" : "Points (High–Low)";
 
     const tableRows = data
-      .map(
-        (r) => `
+      .map((r) => {
+        const parts = (r.full_name || "").split(" ");
+        const first = parts[0] || "";
+        const last = parts.slice(1).join(" ");
+        return `
 <tr>
   <td style="text-align:right;">${r.rank}</td>
-  <td>${escapeHtml(r.full_name)}</td>
+  <td>${escapeHtml(first)}<br/>${escapeHtml(last)}</td>
   <td>${escapeHtml(r.department || "")}</td>
   <td style="text-align:right;">${r.total_points}</td>
-</tr>`
-      )
+</tr>`;
+      })
       .join("");
 
     return `
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 24px; color: #111; }
-      h1 { margin: 0 0 6px 0; font-size: 20px; }
-      .sub { color: #666; font-size: 12px; margin-bottom: 14px; }
-      .filters { margin: 12px 0 18px 0; padding: 12px; background: #f6f6f6; border-radius: 10px; font-size: 12px; }
-      .filters div { margin: 2px 0; }
-      table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th, td { border-bottom: 1px solid #e6e6e6; padding: 8px 6px; vertical-align: top; }
-      th { text-align: left; background: #fafafa; }
-      .meta { margin-top: 10px; color: #666; font-size: 11px; }
-    </style>
-  </head>
-  <body>
-    <h1>Leaderboard</h1>
-    <div class="sub">All users • Points totals</div>
-
-    <div class="filters">
-      <div>${escapeHtml(`Competition Year: ${year}`)}</div>
-      <div>${escapeHtml(`Sort: ${sortLabel}`)}</div>
-      <div>${escapeHtml(`Users: ${data.length}`)}</div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th style="text-align:right;">#</th>
-          <th>User</th>
-          <th>Department</th>
-          <th style="text-align:right;">Points</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tableRows || `<tr><td colspan="4">No rows</td></tr>`}
-      </tbody>
-    </table>
-
-    <div class="meta">Generated: ${escapeHtml(new Date().toLocaleString())}</div>
-  </body>
+<head>
+<meta charset="utf-8" />
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; padding: 24px; color: #111; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { border-bottom: 1px solid #e6e6e6; padding: 8px 6px; vertical-align: top; }
+th { background: #fafafa; text-align: left; }
+</style>
+</head>
+<body>
+<h1>Leaderboard</h1>
+<p>Year: ${year} • Sort: ${sortLabel}</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>User</th>
+<th>Department</th>
+<th style="text-align:right;">Points</th>
+</tr>
+</thead>
+<tbody>
+${tableRows || `<tr><td colspan="4">No rows</td></tr>`}
+</tbody>
+</table>
+</body>
 </html>`;
   };
 
   const exportPdf = async () => {
     if (!hasResults) return;
-
     setExporting("pdf");
+
     try {
       const html = buildHtml(rows);
       const file = await Print.printToFileAsync({ html });
 
       if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert("Sharing not available", "Cannot share files on this device.");
+        Alert.alert("Sharing not available");
         return;
       }
 
-      await Sharing.shareAsync(file.uri, {
-        mimeType: "application/pdf",
-        dialogTitle: "Export PDF",
-      });
-    } catch (e: any) {
-      Alert.alert("Export failed", e?.message ?? "Could not export PDF.");
+      await Sharing.shareAsync(file.uri, { mimeType: "application/pdf" });
     } finally {
       setExporting(null);
     }
@@ -266,20 +245,24 @@ export default function LeaderboardReport() {
 
   const exportCsv = async () => {
     if (!hasResults) return;
-
     setExporting("csv");
+
     try {
-      const header = ["Rank", "User", "Department", "Points"];
+      const header = ["Rank", "First", "Last", "Department", "Points"];
       const lines = [
         header.join(","),
-        ...rows.map((r) =>
-          [
+        ...rows.map((r) => {
+          const parts = (r.full_name || "").split(" ");
+          const first = parts[0] || "";
+          const last = parts.slice(1).join(" ");
+          return [
             csvEscape(r.rank),
-            csvEscape(r.full_name),
+            csvEscape(first),
+            csvEscape(last),
             csvEscape(r.department),
             csvEscape(r.total_points),
-          ].join(",")
-        ),
+          ].join(",");
+        }),
       ];
 
       const csv = lines.join("\n");
@@ -289,16 +272,11 @@ export default function LeaderboardReport() {
       await FileSystem.writeAsStringAsync(uri, csv);
 
       if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert("Sharing not available", "Cannot share files on this device.");
+        Alert.alert("Sharing not available");
         return;
       }
 
-      await Sharing.shareAsync(uri, {
-        mimeType: "text/csv",
-        dialogTitle: "Export CSV",
-      });
-    } catch (e: any) {
-      Alert.alert("Export failed", e?.message ?? "Could not export CSV.");
+      await Sharing.shareAsync(uri, { mimeType: "text/csv" });
     } finally {
       setExporting(null);
     }
@@ -308,173 +286,75 @@ export default function LeaderboardReport() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerWrapper}>
-        <AppHeader />
-      </View>
+      <AppHeader />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
           <View style={styles.titleRow}>
             <Text style={styles.title}>Leaderboard</Text>
             <Text style={styles.subtitle}>All users + total points</Text>
           </View>
 
           <View style={styles.card}>
-            <LinearGradient
-              colors={["rgba(255,255,255,0.35)", "rgba(255,255,255,0.05)"]}
-              start={{ x: 1, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.cornerBubble}
-            >
-              <Text style={styles.bubbleIcon}>🏆</Text>
-            </LinearGradient>
-
-            <View style={styles.topSpacer} />
-
             <View style={styles.quickRow}>
-              <QuickBtn
-                label="Points"
-                active={sortMode === "points"}
-                onPress={() => setSortMode("points")}
-              />
-              <QuickBtn
-                label="Dept"
-                active={sortMode === "dept"}
-                onPress={() => setSortMode("dept")}
-              />
+              <QuickBtn label="Points" active={sortMode === "points"} onPress={() => setSortMode("points")} />
+              <QuickBtn label="Dept" active={sortMode === "dept"} onPress={() => setSortMode("dept")} />
             </View>
 
-            <Text style={styles.subtitle}>
-              Sort:{" "}
-              {sortMode === "dept"
-                ? "Select Points or Dept for Sort"
-                : "Points (High–Low)"}
-            </Text>
-
-            <TouchableOpacity
-              onPress={runReport}
-              disabled={isBusy}
-              style={[styles.runBtn, isBusy && styles.runBtnDisabled]}
-              activeOpacity={0.9}
-            >
+            <TouchableOpacity onPress={runReport} disabled={isBusy} style={styles.runBtn}>
               <Text style={styles.runBtnText}>{loading ? "Running…" : "Run"}</Text>
             </TouchableOpacity>
 
             <View style={styles.exportRow}>
-              <TouchableOpacity
-                onPress={exportPdf}
-                disabled={!hasResults || isBusy}
-                style={[
-                  styles.exportBtn,
-                  (!hasResults || isBusy) && styles.exportBtnDisabled,
-                ]}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.exportBtnText}>
-                  {exporting === "pdf" ? "Exporting…" : "Export PDF"}
-                </Text>
+              <TouchableOpacity onPress={exportPdf} disabled={!hasResults || isBusy} style={styles.exportBtn}>
+                <Text style={styles.exportBtnText}>Export PDF</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={exportCsv}
-                disabled={!hasResults || isBusy}
-                style={[
-                  styles.exportBtn,
-                  (!hasResults || isBusy) && styles.exportBtnDisabled,
-                ]}
-                activeOpacity={0.9}
-              >
-                <Text style={styles.exportBtnText}>
-                  {exporting === "csv" ? "Exporting…" : "Export CSV"}
-                </Text>
+              <TouchableOpacity onPress={exportCsv} disabled={!hasResults || isBusy} style={styles.exportBtn}>
+                <Text style={styles.exportBtnText}>Export CSV</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.card}>
-            <View style={styles.resultsHeader}>
-              <Text style={styles.resultsTitle}>Results</Text>
-              <Text style={styles.resultsSub}>
-                {hasResults ? `${rows.length} users` : "Run to load"}
-              </Text>
-            </View>
-
             {!hasResults ? (
-              <View style={styles.emptyBox}>
-                <Text style={styles.emptyText}>No results yet.</Text>
-              </View>
+              <Text style={styles.emptyText}>Run to load results</Text>
             ) : (
-              <View style={styles.tableWrap}>
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.th, { width: 52, textAlign: "right" }]}>
-                    #
-                  </Text>
-                  <Text style={[styles.th, { flex: 1.6 }]}>User</Text>
-                  <Text style={[styles.th, { flex: 1.1 }]}>Dept</Text>
-                  <Text style={[styles.th, { width: 86, textAlign: "right" }]}>
-                    Pts
-                  </Text>
-                </View>
-
-                {rows.map((r) => (
+              rows.map((r) => {
+                const parts = (r.full_name || "").split(" ");
+                const first = parts[0] || "";
+                const last = parts.slice(1).join(" ");
+                return (
                   <View key={r.user_id} style={styles.tr}>
-                    <Text style={[styles.td, { width: 52, textAlign: "right" }]}>
-                      {r.rank}
-                    </Text>
-                    <Text style={[styles.td, { flex: 1.6 }]} numberOfLines={1}>
-                      {r.full_name}
-                    </Text>
+                    <Text style={[styles.td, { width: 40, textAlign: "right" }]}>{r.rank}</Text>
+                    <View style={{ flex: 1.6 }}>
+                      <Text style={styles.userName}>{first}</Text>
+                      <Text style={styles.userLast}>{last}</Text>
+                    </View>
                     <Text style={[styles.td, { flex: 1.1 }]} numberOfLines={1}>
                       {r.department || "—"}
                     </Text>
-                    <Text style={[styles.td, { width: 86, textAlign: "right" }]}>
-                      {r.total_points}
-                    </Text>
+                    <Text style={[styles.td, { width: 70, textAlign: "right" }]}>{r.total_points}</Text>
                   </View>
-                ))}
-              </View>
+                );
+              })
             )}
           </View>
-
-          <View style={{ height: 110 }} />
         </ScrollView>
 
         <View style={styles.bottomBar}>
-          <View style={styles.bottomButtonRow}>
-            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <Text style={styles.backIcon}>⬅️</Text>
-              <Text style={styles.backText}>Back</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => router.push("/main" as any)}
-            >
-              <Text style={styles.backIcon}>🏠</Text>
-              <Text style={styles.backText}>Home</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <Text style={styles.backText}>⬅️ Back</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/main" as any)}>
+            <Text style={styles.backText}>🏠 Home</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </View>
   );
 }
 
-function QuickBtn({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
+function QuickBtn({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -487,235 +367,39 @@ function QuickBtn({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    paddingTop: Layout.topScreenPadding,
-    paddingHorizontal: Spacing.screenPadding,
-  },
-  headerWrapper: {
-    marginBottom: Spacing.sectionGap,
-  },
-  scrollContent: {},
-
-  titleRow: {
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  title: {
-    fontSize: Typography.greeting.fontSize,
-    fontWeight: Typography.greeting.fontWeight,
-    color: Colors.textPrimary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: Typography.quote.fontSize,
-    color: Colors.textSecondary,
-  },
+  container: { flex: 1, backgroundColor: Colors.background, paddingTop: Layout.topScreenPadding, paddingHorizontal: Spacing.screenPadding },
+  titleRow: { alignItems: "center", marginBottom: 12 },
+  title: { fontSize: Typography.greeting.fontSize, fontWeight: Typography.greeting.fontWeight, color: Colors.textPrimary },
+  subtitle: { color: Colors.textSecondary },
 
   card: {
     backgroundColor: "rgba(255,255,255,0.06)",
     borderRadius: Radius.card,
     padding: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
     marginBottom: Spacing.gridGap,
-    overflow: "hidden",
   },
 
-  cornerBubble: {
-    position: "absolute",
-    top: -22,
-    right: -22,
-    width: 86,
-    height: 86,
-    borderRadius: 26,
-    justifyContent: "flex-end",
-    alignItems: "flex-start",
-    padding: 16,
-  },
-  bubbleIcon: {
-    fontSize: 22,
-  },
+  quickRow: { flexDirection: "row", gap: 10 },
+  quickBtn: { flex: 1, paddingVertical: 10, borderRadius: 14, alignItems: "center", backgroundColor: "rgba(255,255,255,0.08)" },
+  quickBtnActive: { backgroundColor: "rgba(255,255,255,0.14)" },
+  quickBtnText: { color: Colors.textPrimary, fontWeight: "800" },
 
-  topSpacer: {
-    height: 52,
-  },
+  runBtn: { marginTop: 12, backgroundColor: Colors.cards.complete, paddingVertical: 12, borderRadius: 16, alignItems: "center" },
+  runBtnText: { color: Colors.textPrimary, fontWeight: "900" },
 
-  quickRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 2,
-  },
-  quickBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-  quickBtnActive: {
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  quickBtnText: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: "800",
-  },
+  exportRow: { flexDirection: "row", gap: 10, marginTop: 10 },
+  exportBtn: { flex: 1, paddingVertical: 11, borderRadius: 16, alignItems: "center", backgroundColor: "rgba(255,255,255,0.10)" },
+  exportBtnText: { color: Colors.textPrimary, fontWeight: "900" },
 
-  rangeText: {
-    marginTop: 10,
-    color: Colors.textSecondary,
-    fontSize: 12,
-    textAlign: "center",
-    fontWeight: "700",
-    opacity: 0.95,
-  },
+  tr: { flexDirection: "row", paddingVertical: 10, alignItems: "center", borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)" },
+  td: { color: Colors.textPrimary, fontSize: 12, fontWeight: "800" },
 
-  runBtn: {
-    marginTop: 12,
-    backgroundColor: Colors.cards.complete,
-    borderRadius: 16,
-    paddingVertical: 12,
-    alignItems: "center",
-  },
-  runBtnDisabled: {
-    opacity: 0.5,
-  },
-  runBtnText: {
-    color: Colors.textPrimary,
-    fontSize: 14,
-    fontWeight: "900",
-    letterSpacing: 0.2,
-  },
+  userName: { color: Colors.textPrimary, fontSize: 13, fontWeight: "900" },
+  userLast: { color: Colors.textSecondary, fontSize: 12, fontWeight: "800" },
 
-  exportRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-  },
-  exportBtn: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.10)",
-    borderRadius: 16,
-    paddingVertical: 11,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  exportBtnDisabled: {
-    opacity: 0.45,
-  },
-  exportBtnText: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: "900",
-    letterSpacing: 0.2,
-  },
+  emptyText: { textAlign: "center", color: Colors.textSecondary },
 
-  resultsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 10,
-  },
-  resultsTitle: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "900",
-  },
-  resultsSub: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-
-  emptyBox: {
-    backgroundColor: "rgba(0,0,0,0.18)",
-    borderRadius: 14,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.08)",
-    alignItems: "center",
-  },
-  emptyText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  tableWrap: {
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.10)",
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.06)",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    alignItems: "center",
-  },
-  th: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "900",
-  },
-  tr: {
-    flexDirection: "row",
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.06)",
-    backgroundColor: "rgba(0,0,0,0.12)",
-    alignItems: "center",
-  },
-  td: {
-    color: Colors.textPrimary,
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  userName: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: "900",
-  },
-  userDept: {
-    marginTop: 2,
-    color: Colors.textSecondary,
-    fontSize: 11,
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-
-  bottomBar: {
-    position: "absolute",
-    bottom: Layout.bottomNavSpacing,
-    left: Spacing.screenPadding,
-    right: Spacing.screenPadding,
-    alignItems: "center",
-  },
-  bottomButtonRow: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  backButton: {
-    ...Components.backButton,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backIcon: {
-    fontSize: 18,
-    marginRight: 8,
-  },
-  backText: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  bottomBar: { position: "absolute", bottom: Layout.bottomNavSpacing, left: Spacing.screenPadding, right: Spacing.screenPadding, flexDirection: "row", justifyContent: "center", gap: 16 },
+  backButton: { ...Components.backButton },
+  backText: { color: Colors.textPrimary, fontWeight: "700" },
 });

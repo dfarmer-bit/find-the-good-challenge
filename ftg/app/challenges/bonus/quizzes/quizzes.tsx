@@ -116,12 +116,16 @@ export default function BonusQuizzesScreen() {
       <AppHeader />
 
       <View style={styles.headerText}>
-        <Text style={styles.title}>Quizzes</Text>
-        <Text style={styles.subtitle}>
-          Weekly quizzes appear every Monday, and remain for one week. Quizzes
-          with a 70% successful completion are awarded 50 points.
-        </Text>
-      </View>
+  <Text style={styles.icon}>📝</Text>
+  <Text style={styles.title}>Quizzes</Text>
+  <Text style={styles.subtitle}>
+    <Text style={styles.subtitleBold}>
+      +50 Points | Weekly{"\n"}
+    </Text>
+    Weekly quizzes appear every Monday and remain for one week. A score of 70% or higher is required to earn points.
+  </Text>
+</View>
+
 
       <View style={styles.content}>
         {loading ? (
@@ -429,6 +433,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 16,
   },
+icon: {
+  fontSize: 36,
+  marginBottom: 6,
+},
+
+subtitleBold: {
+  fontWeight: "800",
+  color: Colors.textPrimary,
+},
 
   backButton: {
     ...Components.backButton,

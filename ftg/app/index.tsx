@@ -1,5 +1,4 @@
-// app/index.tsx
-
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -10,16 +9,20 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity
+  TouchableOpacity,
+  Image,
+  View,
 } from "react-native";
-import { Colors, Radius, Spacing, Typography } from "../constants/theme";
+import { Colors, Radius, Spacing } from "../constants/theme";
 import { supabase } from "../lib/supabase";
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -49,7 +52,30 @@ export default function LoginScreen() {
       return;
     }
 
-    router.replace("/main");
+    router.replace("/intro");
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Enter email", "Please enter your email address first.");
+      return;
+    }
+
+    setResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+    setResetLoading(false);
+
+    if (error) {
+      Alert.alert("Reset failed", error.message);
+      return;
+    }
+
+    Alert.alert(
+      "Check your email",
+      "We sent you a password reset link. After resetting, return here to log in."
+    );
   };
 
   return (
@@ -61,25 +87,47 @@ export default function LoginScreen() {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.title}>Find the Good</Text>
+        <Image
+          source={require("../assets/images/FTG1.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
         <TextInput
           style={styles.input}
           placeholder="Email"
           placeholderTextColor={Colors.textSecondary}
           autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor={Colors.textSecondary}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-        />
+        <View style={styles.passwordWrapper}>
+          <TextInput
+            style={styles.passwordInput}
+            placeholder="Password"
+            placeholderTextColor={Colors.textSecondary}
+            secureTextEntry={!showPassword}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <TouchableOpacity
+            style={styles.eyeButton}
+            onPress={() => setShowPassword((v) => !v)}
+            accessibilityLabel={showPassword ? "Hide password" : "Show password"}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off" : "eye"}
+              size={22}
+              color={Colors.textSecondary}
+            />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.button}
@@ -91,8 +139,14 @@ export default function LoginScreen() {
           </Text>
         </TouchableOpacity>
 
+        <TouchableOpacity onPress={handleForgotPassword} disabled={resetLoading}>
+          <Text style={styles.link}>
+            {resetLoading ? "Sending reset..." : "Forgot password?"}
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity onPress={() => router.push("/signup")}>
-          <Text style={styles.link}>Create my account</Text>
+          <Text style={[styles.link, { marginTop: 12 }]}>Create my account</Text>
         </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -106,13 +160,14 @@ const styles = StyleSheet.create({
     padding: Spacing.screenPadding,
     justifyContent: "center",
   },
-  title: {
-    fontSize: Typography.greeting.fontSize,
-    fontWeight: Typography.greeting.fontWeight,
-    color: Colors.textPrimary,
-    textAlign: "center",
-    marginBottom: 32,
+
+  logo: {
+    width: 140,
+    height: 140,
+    alignSelf: "center",
+    marginBottom: 24,
   },
+
   input: {
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: Radius.card,
@@ -120,19 +175,42 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     color: Colors.textPrimary,
   },
+
+  passwordWrapper: {
+    position: "relative",
+    marginBottom: 14,
+  },
+
+  passwordInput: {
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: Radius.card,
+    padding: 14,
+    paddingRight: 48,
+    color: Colors.textPrimary,
+  },
+
+  eyeButton: {
+    position: "absolute",
+    right: 14,
+    top: "50%",
+    transform: [{ translateY: -11 }],
+  },
+
   button: {
     backgroundColor: Colors.cards.complete,
     borderRadius: Radius.card,
     paddingVertical: 16,
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 12,
   },
+
   buttonText: {
     color: Colors.textPrimary,
     textAlign: "center",
     fontSize: 16,
     fontWeight: "600",
   },
+
   link: {
     color: Colors.textSecondary,
     textAlign: "center",
