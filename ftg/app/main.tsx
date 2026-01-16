@@ -1,6 +1,9 @@
 // app/main.tsx
 // FULL FILE REPLACEMENT
-// ONLY change: Events badge moves to bottom-center (not top-right)
+// Fixes:
+// - Removes the broken/duplicated Admin Assignments badge block (was causing syntax error)
+// - Admin Assignments bonus-count now uses correct columns + "completed" logic (submitted_at/status)
+// - Keeps your Events badge bottom-center
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter, type Href } from "expo-router";
@@ -256,53 +259,61 @@ export default function HomeScreen() {
       openTotal += ids.filter((qid) => !submitted.has(qid)).length;
     }
 
-    // -------- Admin Assignments (open published in window minus submissions)
+    // -------- Admin Assignments (published minus COMPLETED submissions)
     const { data: openAdmin, error: adminErr } = await supabase
       .from("admin_assignments")
       .select("id")
-      .eq("status", "published")
-      .lte("publish_start", nowIso)
-      .gt("publish_end", nowIso);
+      .eq("status", "published");
 
-    if (!adminErr && Array.isArray(openAdmin) && openAdmin.length > 0) {
-      const ids = openAdmin.map((a: any) => a.id);
+    const adminRows = Array.isArray(openAdmin) ? openAdmin : [];
+    if (!adminErr && adminRows.length > 0) {
+      const ids = adminRows.map((a: any) => a.id);
 
       const { data: subs, error: subsErr } = await supabase
         .from("admin_assignment_submissions")
-        .select("assignment_id")
+        .select("admin_assignment_id, submitted_at, status")
         .eq("user_id", user.id)
-        .in("assignment_id", ids);
+        .in("admin_assignment_id", ids);
 
-      const submitted = new Set<string>();
-      if (!subsErr && Array.isArray(subs))
-        subs.forEach((s: any) => submitted.add(s.assignment_id));
+      const completed = new Set<string>();
+      if (!subsErr && Array.isArray(subs)) {
+        subs.forEach((s: any) => {
+          if (s.submitted_at || s.status === "approved")
+            completed.add(s.admin_assignment_id);
+        });
+      }
 
-      openTotal += ids.filter((aid) => !submitted.has(aid)).length;
+      openTotal += ids.filter((aid) => !completed.has(aid)).length;
     }
 
     // -------- Growth Missions (open published in window minus submissions)
-    const { data: openGrowth, error: growthErr } = await supabase
-      .from("growth_missions")
-      .select("id")
-      .eq("status", "published")
-      .lte("publish_start", nowIso)
-      .gt("publish_end", nowIso);
+    // -------- Growth Missions (published minus submitted)
+const { data: openGrowth, error: growthErr } = await supabase
+  .from("growth_missions")
+  .select("id")
+  .eq("status", "published");
 
-    if (!growthErr && Array.isArray(openGrowth) && openGrowth.length > 0) {
-      const ids = openGrowth.map((g: any) => g.id);
+if (!growthErr && Array.isArray(openGrowth) && openGrowth.length > 0) {
+  const ids = openGrowth.map((g: any) => g.id);
 
-      const { data: subs, error: subsErr } = await supabase
-        .from("growth_mission_submissions")
-        .select("mission_id")
-        .eq("user_id", user.id)
-        .in("mission_id", ids);
+  const { data: subs, error: subsErr } = await supabase
+    .from("growth_mission_submissions")
+    .select("growth_mission_id, submitted_at, status")
+    .eq("user_id", user.id)
+    .in("growth_mission_id", ids);
 
-      const submitted = new Set<string>();
-      if (!subsErr && Array.isArray(subs))
-        subs.forEach((s: any) => submitted.add(s.mission_id));
+  const completed = new Set<string>();
+  if (!subsErr && Array.isArray(subs)) {
+    subs.forEach((s: any) => {
+      if (s.submitted_at || s.status === "approved") {
+        completed.add(s.growth_mission_id);
+      }
+    });
+  }
 
-      openTotal += ids.filter((mid) => !submitted.has(mid)).length;
-    }
+  openTotal += ids.filter((gid) => !completed.has(gid)).length;
+}
+
 
     setBonusCount(openTotal);
 
@@ -1023,7 +1034,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // ✅ NEW: Events badge bottom-center
+  // ✅ Events badge bottom-center
   countBadgeBottomCenter: {
     position: "absolute",
     bottom: 8,

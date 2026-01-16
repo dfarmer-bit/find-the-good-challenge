@@ -1,38 +1,36 @@
 // app/challenges/bonus/admin-assignments/index.tsx
 // FULL FILE REPLACEMENT
+// Fixes:
+// - Open / In Progress / Completed buckets based on submissions.submitted_at
+// - No more “row exists = completed” (because we create a submission on first view)
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppHeader } from "../../../../components/AppHeader";
-import {
-  Colors,
-  Layout,
-  Radius,
-  Spacing,
-  Typography,
-} from "../../../../constants/theme";
+import { Colors, Layout, Radius, Spacing, Typography } from "../../../../constants/theme";
 import { supabase } from "../../../../lib/supabase";
 
 type Assignment = {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
+  points: number;
+};
+
+type SubmissionRow = {
+  admin_assignment_id: string;
+  submitted_at: string | null;
+  status: string | null;
 };
 
 export default function AdminAssignmentsScreen() {
   const router = useRouter();
+
   const [openAssignments, setOpenAssignments] = useState<Assignment[]>([]);
-  const [completedAssignments, setCompletedAssignments] = useState<Assignment[]>(
-    []
-  );
+  const [inProgressAssignments, setInProgressAssignments] = useState<Assignment[]>([]);
+  const [completedAssignments, setCompletedAssignments] = useState<Assignment[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -45,73 +43,84 @@ export default function AdminAssignmentsScreen() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
     if (!user) return;
 
-    // 1) Get completed assignment IDs for this user (row exists = completed)
-    const { data: completedSubs } = await supabase
-      .from("admin_assignment_submissions")
-      .select("assignment_id")
-      .eq("user_id", user.id);
+    // 1) All published assignments
+    const { data: allPublished, error: aErr } = await supabase
+      .from("admin_assignments")
+      .select("id, title, description, points")
+      .eq("status", "published")
+      .order("created_at", { ascending: false });
 
-    const completedIds = (completedSubs ?? [])
-      .map((s: any) => s.assignment_id as string)
-      .filter(Boolean);
+    if (aErr) return;
 
-    // 2) Completed assignments details
-    let completed: Assignment[] = [];
-    if (completedIds.length > 0) {
-      const { data: completedRows } = await supabase
-        .from("admin_assignments")
-        .select("id, title, description")
-        .in("id", completedIds);
+    const published = (allPublished ?? []) as Assignment[];
+    const ids = published.map((a) => a.id);
 
-      completed = (completedRows ?? []) as Assignment[];
+    // 2) Submissions for this user for these assignments
+    let subs: SubmissionRow[] = [];
+    if (ids.length > 0) {
+      const { data: sRows } = await supabase
+        .from("admin_assignment_submissions")
+        .select("admin_assignment_id, submitted_at, status")
+        .eq("user_id", user.id)
+        .in("admin_assignment_id", ids);
+
+      subs = (sRows ?? []) as any as SubmissionRow[];
     }
 
-    // 3) Open assignments = published minus completedIds
-    let open: Assignment[] = [];
+    const subById: Record<string, SubmissionRow> = {};
+    for (const s of subs) subById[s.admin_assignment_id] = s;
 
-    if (completedIds.length > 0) {
-      // PostgREST expects an "in.(...)" list string inside .not(...)
-      const inList = `(${completedIds.map((id) => `"${id}"`).join(",")})`;
+    // 3) Bucket logic:
+    // - Completed: submitted_at is set OR status is approved
+    // - In Progress: submission exists but submitted_at is null
+    // - Open: no submission row yet
+    const open: Assignment[] = [];
+    const inProg: Assignment[] = [];
+    const done: Assignment[] = [];
 
-      const { data: openRows } = await supabase
-        .from("admin_assignments")
-        .select("id, title, description")
-        .eq("status", "published")
-        .not("id", "in", inList);
+    for (const a of published) {
+      const s = subById[a.id];
+      const isCompleted = !!s?.submitted_at || s?.status === "approved";
+      const isInProgress = !!s && !s.submitted_at && s.status !== "approved";
 
-      open = (openRows ?? []) as Assignment[];
-    } else {
-      const { data: openRows } = await supabase
-        .from("admin_assignments")
-        .select("id, title, description")
-        .eq("status", "published");
-
-      open = (openRows ?? []) as Assignment[];
+      if (isCompleted) done.push(a);
+      else if (isInProgress) inProg.push(a);
+      else open.push(a);
     }
 
     setOpenAssignments(open);
-    setCompletedAssignments(completed);
+    setInProgressAssignments(inProg);
+    setCompletedAssignments(done);
+  };
+
+  const goToQuestions = (id: string) => {
+    router.push(`/challenges/bonus/admin-assignments/${id}/questions` as any);
   };
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <AppHeader />
 
         <View style={styles.headerText}>
           <Text style={styles.icon}>🗂️</Text>
           <Text style={styles.title}>Admin Assignments</Text>
           <Text style={styles.subtitle}>
-            <Text style={styles.subtitleBold}>+100 Points{"\n"}</Text>
-            Required administrative submissions.
+            <Text style={styles.subtitleBold}>Standard Format{"\n"}</Text>
+            3 ratings (1–5) + 3 short responses.
           </Text>
         </View>
+
+        {openAssignments.length === 0 &&
+          inProgressAssignments.length === 0 &&
+          completedAssignments.length === 0 && (
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyTitle}>No assignments right now</Text>
+              <Text style={styles.emptySub}>Check back later.</Text>
+            </View>
+          )}
 
         {/* OPEN */}
         {openAssignments.length > 0 && (
@@ -121,13 +130,25 @@ export default function AdminAssignmentsScreen() {
               <AssignmentCard
                 key={a.id}
                 title={a.title}
-                description={a.description}
+                description={`+${a.points} Points`}
                 color={Colors.cards.admin}
-                onPress={() =>
-                  router.push(
-                    `/challenges/bonus/admin-assignments/${a.id}` as any
-                  )
-                }
+                onPress={() => goToQuestions(a.id)}
+              />
+            ))}
+          </>
+        )}
+
+        {/* IN PROGRESS */}
+        {inProgressAssignments.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>In Progress</Text>
+            {inProgressAssignments.map((a) => (
+              <AssignmentCard
+                key={a.id}
+                title={a.title}
+                description="Continue"
+                color={"rgba(255,255,255,0.10)"}
+                onPress={() => goToQuestions(a.id)}
               />
             ))}
           </>
@@ -141,30 +162,22 @@ export default function AdminAssignmentsScreen() {
               <AssignmentCard
                 key={a.id}
                 title={a.title}
-                description="Completed"
+                description="Completed ✅"
                 color={Colors.cards.complete}
-                onPress={() =>
-                  router.push(
-                    `/challenges/bonus/admin-assignments/${a.id}` as any
-                  )
-                }
+                onPress={() => goToQuestions(a.id)}
               />
             ))}
           </>
         )}
       </ScrollView>
 
-      {/* Bottom Navigation */}
       <View style={styles.bottomBar}>
         <View style={styles.bottomButtonRow}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backText}>⬅️ Back</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push("/main")}
-          >
+          <TouchableOpacity style={styles.backButton} onPress={() => router.push("/main" as any)}>
             <Text style={styles.backText}>🏠 Home</Text>
           </TouchableOpacity>
         </View>
@@ -216,7 +229,6 @@ const styles = StyleSheet.create({
     paddingBottom: 140,
   },
 
-  // ✅ Standard header block
   headerText: {
     alignItems: "center",
     marginBottom: 16,
@@ -243,6 +255,29 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  emptyWrap: {
+    marginTop: 18,
+    padding: 16,
+    borderRadius: Radius.card,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+  },
+  emptyTitle: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "800",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  emptySub: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
   sectionTitle: {
     marginTop: 18,
     marginBottom: 10,
@@ -255,6 +290,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 12,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
   },
   cornerBubble: {
     position: "absolute",
@@ -281,7 +318,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  // Bottom Nav styles
   bottomBar: {
     position: "absolute",
     left: 0,
